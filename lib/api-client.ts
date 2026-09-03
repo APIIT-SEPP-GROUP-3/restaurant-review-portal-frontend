@@ -1,4 +1,4 @@
-import type { ApiResponse } from "@/types/api";
+import type { ApiResponse, ApiSuccessResponse } from "@/types/api";
 
 const API_BASE_URL = (
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000/api"
@@ -18,10 +18,10 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiRequest<T>(
+export async function apiRequestEnvelope<T>(
   path: string,
   options: ApiRequestOptions = {},
-): Promise<T> {
+): Promise<ApiSuccessResponse<T>> {
   const { token, headers, ...requestOptions } = options;
   const requestHeaders = new Headers(headers);
 
@@ -63,5 +63,14 @@ export async function apiRequest<T>(
     throw new ApiError(message, response.status);
   }
 
-  return payload.data;
+  return payload;
+}
+
+export async function apiRequest<T>(
+  path: string,
+  options: ApiRequestOptions = {},
+): Promise<T> {
+  const response = await apiRequestEnvelope<T>(path, options);
+
+  return response.data;
 }
