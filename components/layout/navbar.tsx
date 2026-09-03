@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { AuthNavigation } from "@/components/layout/auth-navigation";
+
 const navigationLinks = [
   { label: "Home", href: "/" },
   { label: "Restaurants", href: "/#featured" },
@@ -17,6 +19,7 @@ export function Navbar() {
           <span className="flex size-9 items-center justify-center rounded-xl bg-orange-500 text-white">
             D
           </span>
+
           <span>
             Dine<span className="text-orange-500">Rate</span>
           </span>
@@ -37,21 +40,7 @@ export function Navbar() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <Link
-            href="/login"
-            className="hidden rounded-full px-4 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:bg-orange-50 sm:inline-flex"
-          >
-            Log in
-          </Link>
-
-          <Link
-            href="/register"
-            className="inline-flex rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
-          >
-            Sign up
-          </Link>
-        </div>
+        <AuthNavigation />
       </div>
     </header>
   );
