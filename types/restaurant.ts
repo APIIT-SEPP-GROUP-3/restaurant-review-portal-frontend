@@ -88,6 +88,61 @@ export interface MenuItem {
   updatedAt: string;
 }
 
+export interface MenuItemImage {
+  id: number;
+  menuItemId: number;
+  imageUrl: string;
+  altText: string | null;
+  isPrimary: boolean;
+  createdAt: string;
+}
+
+export interface ManagedMenuItem extends MenuItem {
+  menuCategory: MenuCategory;
+  images: MenuItemImage[];
+}
+
+export interface CreateRestaurantInput {
+  name: string;
+  description?: string;
+  address: string;
+  city: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  openingHours?: string;
+}
+
+export type UpdateRestaurantInput = Partial<CreateRestaurantInput>;
+
+export interface CreateRestaurantCategoryInput {
+  name: string;
+  description?: string;
+}
+
+export interface CreateMenuCategoryInput {
+  name: string;
+  displayOrder?: number;
+}
+
+export type UpdateMenuCategoryInput = Partial<CreateMenuCategoryInput>;
+
+export interface CreateMenuItemInput {
+  menuCategoryId: number;
+  name: string;
+  description?: string;
+  price: number;
+  isAvailable?: boolean;
+}
+
+export type UpdateMenuItemInput = Partial<CreateMenuItemInput>;
+
+export interface CreateImageInput {
+  imageUrl: string;
+  altText?: string;
+  isPrimary?: boolean;
+}
+
 export interface RestaurantDetail extends RestaurantSummary {
   owner: RestaurantOwner;
   menuCategories: MenuCategory[];
