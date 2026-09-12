@@ -1,9 +1,11 @@
 import { apiRequest } from "@/lib/api-client";
 import type {
   CreateReviewInput,
+  CreateReviewCommentInput,
   RatingType,
   RestaurantRatingSummary,
   RestaurantReview,
+  ReviewComment,
 } from "@/types/review";
 
 export function getRestaurantReviews(
@@ -31,6 +33,24 @@ export function createReview(
   token: string,
 ): Promise<RestaurantReview> {
   return apiRequest<RestaurantReview>("/reviews", {
+    method: "POST",
+    token,
+    body: JSON.stringify(input),
+  });
+}
+
+export function getReviewComments(
+  reviewId: number,
+): Promise<ReviewComment[]> {
+  return apiRequest<ReviewComment[]>(`/reviews/${reviewId}/comments`);
+}
+
+export function createReviewComment(
+  reviewId: number,
+  input: CreateReviewCommentInput,
+  token: string,
+): Promise<ReviewComment> {
+  return apiRequest<ReviewComment>(`/reviews/${reviewId}/comments`, {
     method: "POST",
     token,
     body: JSON.stringify(input),

@@ -1,7 +1,11 @@
 import type { RestaurantReview } from "@/types/review";
+import type { ReviewComment } from "@/types/review";
+
+import { ReviewComments } from "@/components/reviews/review-comments";
 
 interface ReviewListProps {
   reviews: RestaurantReview[];
+  commentsByReviewId: Record<number, ReviewComment[]>;
 }
 
 function formatDate(value: string): string {
@@ -21,7 +25,10 @@ function formatRating(value: number | string | null): string {
   return Number.isFinite(rating) ? `${rating.toFixed(1)}/5` : "Not rated";
 }
 
-export function ReviewList({ reviews }: ReviewListProps) {
+export function ReviewList({
+  reviews,
+  commentsByReviewId,
+}: ReviewListProps) {
   return (
     <section>
       <div className="flex items-end justify-between gap-4">
@@ -87,6 +94,11 @@ export function ReviewList({ reviews }: ReviewListProps) {
                   Menu item: {review.menuItem.name}
                 </p>
               ) : null}
+
+              <ReviewComments
+                reviewId={review.id}
+                comments={commentsByReviewId[review.id] ?? []}
+              />
             </article>
           ))}
         </div>
