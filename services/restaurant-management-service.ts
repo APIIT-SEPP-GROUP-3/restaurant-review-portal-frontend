@@ -10,8 +10,9 @@ import type {
   MenuItem,
   MenuItemImage,
   RestaurantCategory,
-  RestaurantDetail,
   RestaurantImage,
+  RestaurantRecord,
+  RestaurantWithCategories,
   UpdateMenuCategoryInput,
   UpdateMenuItemInput,
   UpdateRestaurantInput,
@@ -20,8 +21,8 @@ import type {
 export function createRestaurant(
   input: CreateRestaurantInput,
   token: string,
-): Promise<RestaurantDetail> {
-  return apiRequest<RestaurantDetail>("/restaurants", {
+): Promise<RestaurantRecord> {
+  return apiRequest<RestaurantRecord>("/restaurants", {
     method: "POST",
     token,
     body: JSON.stringify(input),
@@ -32,8 +33,8 @@ export function updateRestaurant(
   restaurantId: number,
   input: UpdateRestaurantInput,
   token: string,
-): Promise<RestaurantDetail> {
-  return apiRequest<RestaurantDetail>(`/restaurants/${restaurantId}`, {
+): Promise<RestaurantRecord> {
+  return apiRequest<RestaurantRecord>(`/restaurants/${restaurantId}`, {
     method: "PUT",
     token,
     body: JSON.stringify(input),
@@ -44,8 +45,8 @@ export function updateRestaurantCategories(
   restaurantId: number,
   categoryIds: number[],
   token: string,
-): Promise<RestaurantDetail> {
-  return apiRequest<RestaurantDetail>(
+): Promise<RestaurantWithCategories> {
+  return apiRequest<RestaurantWithCategories>(
     `/restaurants/${restaurantId}/categories`,
     {
       method: "PUT",

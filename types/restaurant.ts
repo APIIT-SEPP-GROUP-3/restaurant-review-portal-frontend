@@ -28,7 +28,7 @@ export interface RestaurantImage {
   createdAt: string;
 }
 
-export interface RestaurantSummary {
+export interface RestaurantRecord {
   id: number;
   ownerId: number;
   name: string;
@@ -42,8 +42,15 @@ export interface RestaurantSummary {
   status: RestaurantStatus;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface RestaurantSummary extends RestaurantRecord {
   categories: RestaurantCategoryMapping[];
   images: RestaurantImage[];
+}
+
+export interface RestaurantWithCategories extends RestaurantRecord {
+  categories: RestaurantCategoryMapping[];
 }
 
 export interface RestaurantSearchParams {
