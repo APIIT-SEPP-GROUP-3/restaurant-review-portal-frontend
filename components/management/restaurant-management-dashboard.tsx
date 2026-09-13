@@ -264,6 +264,12 @@ export function RestaurantManagementDashboard() {
                   {restaurant.description ?? restaurant.address}
                 </p>
                 <div className="mt-5 flex flex-wrap gap-3">
+                  <Link
+                    href={`/manage/restaurants/${restaurant.id}`}
+                    className="rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+                  >
+                    Manage menu
+                  </Link>
                   <button
                     type="button"
                     onClick={() => {
