@@ -4,7 +4,7 @@ import { AuthNavigation } from "@/components/layout/auth-navigation";
 
 const navigationLinks = [
   { label: "Home", href: "/" },
-  { label: "Restaurants", href: "/#featured" },
+  { label: "Restaurants", href: "/restaurants" },
   { label: "About", href: "/#about" },
 ];
 
