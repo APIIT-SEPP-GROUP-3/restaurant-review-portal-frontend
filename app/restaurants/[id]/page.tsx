@@ -2,9 +2,22 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { RatingSummary } from "@/components/reviews/rating-summary";
+import { ReviewForm } from "@/components/reviews/review-form";
+import { ReviewList } from "@/components/reviews/review-list";
 import { ApiError } from "@/lib/api-client";
 import { getRestaurantById } from "@/services/restaurant-service";
+import {
+  getRatingTypes,
+  getRestaurantRatingSummary,
+  getRestaurantReviews,
+} from "@/services/review-service";
 import type { RestaurantDetail } from "@/types/restaurant";
+import type {
+  RatingType,
+  RestaurantRatingSummary,
+  RestaurantReview,
+} from "@/types/review";
 
 export const metadata: Metadata = {
   title: "Restaurant details",
@@ -19,6 +32,13 @@ interface RestaurantLoadResult {
   restaurant: RestaurantDetail | null;
   errorMessage: string;
   isNotFound: boolean;
+}
+
+interface ReviewData {
+  reviews: RestaurantReview[];
+  ratingSummary: RestaurantRatingSummary;
+  ratingTypes: RatingType[];
+  errorMessage: string;
 }
 
 async function loadRestaurant(
@@ -48,6 +68,30 @@ async function loadRestaurant(
       isNotFound: false,
     };
   }
+}
+
+async function loadReviewData(restaurantId: number): Promise<ReviewData> {
+  const results = await Promise.allSettled([
+    getRestaurantReviews(restaurantId),
+    getRestaurantRatingSummary(restaurantId),
+    getRatingTypes(),
+  ]);
+
+  const [reviewsResult, summaryResult, ratingTypesResult] = results;
+  const hasError = results.some((result) => result.status === "rejected");
+
+  return {
+    reviews: reviewsResult.status === "fulfilled" ? reviewsResult.value : [],
+    ratingSummary:
+      summaryResult.status === "fulfilled"
+        ? summaryResult.value
+        : { overallAverage: null, reviewCount: 0, ratingTypes: [] },
+    ratingTypes:
+      ratingTypesResult.status === "fulfilled" ? ratingTypesResult.value : [],
+    errorMessage: hasError
+      ? "Some review information is temporarily unavailable."
+      : "",
+  };
 }
 
 export default async function RestaurantDetailPage({
@@ -90,9 +134,11 @@ export default async function RestaurantDetailPage({
     restaurant.images.find((image) => image.isPrimary) ??
     restaurant.images[0];
 
+  const reviewData = await loadReviewData(restaurant.id);
+
   return (
-      <section className="flex-1 bg-gradient-to-b from-orange-50/70 to-white px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
+    <section className="flex-1 bg-gradient-to-b from-orange-50/70 to-white px-4 py-12 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl">
           <Link
             href="/restaurants"
             className="inline-flex font-semibold text-orange-600 hover:text-orange-700"
@@ -204,8 +250,26 @@ export default async function RestaurantDetailPage({
                 </p>
               </div>
             </div>
-          </div>
         </div>
-      </section>
+
+        {reviewData.errorMessage ? (
+          <p className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+            {reviewData.errorMessage}
+          </p>
+        ) : null}
+
+        <div className="mt-8 grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
+          <div className="space-y-8">
+            <RatingSummary summary={reviewData.ratingSummary} />
+            <ReviewForm
+              restaurantId={restaurant.id}
+              ratingTypes={reviewData.ratingTypes}
+            />
+          </div>
+
+          <ReviewList reviews={reviewData.reviews} />
+        </div>
+      </div>
+    </section>
   );
 }
