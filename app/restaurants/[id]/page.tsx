@@ -9,6 +9,7 @@ import { ApiError } from "@/lib/api-client";
 import { getRestaurantById } from "@/services/restaurant-service";
 import {
   getRatingTypes,
+  getReviewComments,
   getRestaurantRatingSummary,
   getRestaurantReviews,
 } from "@/services/review-service";
@@ -17,6 +18,7 @@ import type {
   RatingType,
   RestaurantRatingSummary,
   RestaurantReview,
+  ReviewComment,
 } from "@/types/review";
 
 export const metadata: Metadata = {
@@ -38,6 +40,7 @@ interface ReviewData {
   reviews: RestaurantReview[];
   ratingSummary: RestaurantRatingSummary;
   ratingTypes: RatingType[];
+  commentsByReviewId: Record<number, ReviewComment[]>;
   errorMessage: string;
 }
 
@@ -80,15 +83,33 @@ async function loadReviewData(restaurantId: number): Promise<ReviewData> {
   const [reviewsResult, summaryResult, ratingTypesResult] = results;
   const hasError = results.some((result) => result.status === "rejected");
 
+  const reviews =
+    reviewsResult.status === "fulfilled" ? reviewsResult.value : [];
+  const commentResults = await Promise.allSettled(
+    reviews.map((review) => getReviewComments(review.id)),
+  );
+  const commentsByReviewId = Object.fromEntries(
+    reviews.map((review, index) => [
+      review.id,
+      commentResults[index]?.status === "fulfilled"
+        ? commentResults[index].value
+        : [],
+    ]),
+  );
+  const hasCommentError = commentResults.some(
+    (result) => result.status === "rejected",
+  );
+
   return {
-    reviews: reviewsResult.status === "fulfilled" ? reviewsResult.value : [],
+    reviews,
     ratingSummary:
       summaryResult.status === "fulfilled"
         ? summaryResult.value
         : { overallAverage: null, reviewCount: 0, ratingTypes: [] },
     ratingTypes:
       ratingTypesResult.status === "fulfilled" ? ratingTypesResult.value : [],
-    errorMessage: hasError
+    commentsByReviewId,
+    errorMessage: hasError || hasCommentError
       ? "Some review information is temporarily unavailable."
       : "",
   };
@@ -267,7 +288,10 @@ export default async function RestaurantDetailPage({
             />
           </div>
 
-          <ReviewList reviews={reviewData.reviews} />
+          <ReviewList
+            reviews={reviewData.reviews}
+            commentsByReviewId={reviewData.commentsByReviewId}
+          />
         </div>
       </div>
     </section>

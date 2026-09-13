@@ -69,3 +69,39 @@ export interface CreateReviewInput {
   reviewText: string;
   ratings: RatingInput[];
 }
+
+export interface ReviewCommentAuthor extends ReviewAuthor {
+  role: {
+    roleName: "CUSTOMER" | "RESTAURANT_OWNER" | "MODERATOR" | "ADMIN";
+  };
+}
+
+export interface ReviewCommentReply {
+  id: number;
+  reviewId: number;
+  userId: number;
+  parentCommentId: number;
+  commentText: string;
+  moderationStatus: "PENDING" | "APPROVED" | "REJECTED";
+  createdAt: string;
+  updatedAt: string;
+  user: ReviewCommentAuthor;
+}
+
+export interface ReviewComment {
+  id: number;
+  reviewId: number;
+  userId: number;
+  parentCommentId: null;
+  commentText: string;
+  moderationStatus: "PENDING" | "APPROVED" | "REJECTED";
+  createdAt: string;
+  updatedAt: string;
+  user: ReviewCommentAuthor;
+  replies: ReviewCommentReply[];
+}
+
+export interface CreateReviewCommentInput {
+  commentText: string;
+  parentCommentId?: number;
+}
