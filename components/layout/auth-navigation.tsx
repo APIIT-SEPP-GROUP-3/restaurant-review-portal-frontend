@@ -51,6 +51,15 @@ export function AuthNavigation() {
 
   return (
     <div className="flex items-center gap-2 sm:gap-3">
+      {user.role === "MODERATOR" || user.role === "ADMIN" ? (
+        <Link
+          href="/moderation"
+          className="hidden rounded-full px-4 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-50 md:inline-flex"
+        >
+          Moderation
+        </Link>
+      ) : null}
+
       <span className="hidden text-sm text-zinc-600 sm:inline">
         Hi, <strong className="text-zinc-900">{user.firstName}</strong>
       </span>
