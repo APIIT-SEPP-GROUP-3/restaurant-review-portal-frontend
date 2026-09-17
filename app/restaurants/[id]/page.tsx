@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { RestaurantMenu } from "@/components/menu/restaurant-menu";
 import { RatingSummary } from "@/components/reviews/rating-summary";
 import { ReviewForm } from "@/components/reviews/review-form";
 import { ReviewList } from "@/components/reviews/review-list";
 import { ApiError } from "@/lib/api-client";
+import { getRestaurantMenuItems } from "@/services/menu-service";
 import { getRestaurantById } from "@/services/restaurant-service";
 import {
   getRatingTypes,
@@ -13,7 +15,7 @@ import {
   getRestaurantRatingSummary,
   getRestaurantReviews,
 } from "@/services/review-service";
-import type { RestaurantDetail } from "@/types/restaurant";
+import type { ManagedMenuItem, RestaurantDetail } from "@/types/restaurant";
 import type {
   RatingType,
   RestaurantRatingSummary,
@@ -41,6 +43,11 @@ interface ReviewData {
   ratingSummary: RestaurantRatingSummary;
   ratingTypes: RatingType[];
   commentsByReviewId: Record<number, ReviewComment[]>;
+  errorMessage: string;
+}
+
+interface MenuData {
+  menuItems: ManagedMenuItem[];
   errorMessage: string;
 }
 
@@ -115,6 +122,23 @@ async function loadReviewData(restaurantId: number): Promise<ReviewData> {
   };
 }
 
+async function loadMenuData(restaurantId: number): Promise<MenuData> {
+  try {
+    return {
+      menuItems: await getRestaurantMenuItems(restaurantId),
+      errorMessage: "",
+    };
+  } catch (error) {
+    return {
+      menuItems: [],
+      errorMessage:
+        error instanceof ApiError
+          ? error.message
+          : "The restaurant menu is temporarily unavailable.",
+    };
+  }
+}
+
 export default async function RestaurantDetailPage({
   params,
 }: RestaurantDetailPageProps) {
@@ -155,7 +179,10 @@ export default async function RestaurantDetailPage({
     restaurant.images.find((image) => image.isPrimary) ??
     restaurant.images[0];
 
-  const reviewData = await loadReviewData(restaurant.id);
+  const [reviewData, menuData] = await Promise.all([
+    loadReviewData(restaurant.id),
+    loadMenuData(restaurant.id),
+  ]);
 
   return (
     <section className="flex-1 bg-gradient-to-b from-orange-50/70 to-white px-4 py-12 sm:px-6 lg:px-8">
@@ -272,6 +299,14 @@ export default async function RestaurantDetailPage({
               </div>
             </div>
         </div>
+
+        {menuData.errorMessage ? (
+          <p className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+            {menuData.errorMessage}
+          </p>
+        ) : (
+          <RestaurantMenu menuItems={menuData.menuItems} />
+        )}
 
         {reviewData.errorMessage ? (
           <p className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">

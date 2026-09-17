@@ -2,11 +2,26 @@ import { apiRequest } from "@/lib/api-client";
 import type {
   CreateReviewInput,
   CreateReviewCommentInput,
+  MenuItemReview,
   RatingType,
   RestaurantRatingSummary,
   RestaurantReview,
   ReviewComment,
 } from "@/types/review";
+
+export function getMenuItemReviews(
+  menuItemId: number,
+): Promise<MenuItemReview[]> {
+  return apiRequest<MenuItemReview[]>(`/menu-items/${menuItemId}/reviews`);
+}
+
+export function getMenuItemRatingSummary(
+  menuItemId: number,
+): Promise<RestaurantRatingSummary> {
+  return apiRequest<RestaurantRatingSummary>(
+    `/menu-items/${menuItemId}/rating-summary`,
+  );
+}
 
 export function getRestaurantReviews(
   restaurantId: number,
