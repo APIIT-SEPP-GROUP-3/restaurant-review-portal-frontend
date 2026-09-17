@@ -28,7 +28,7 @@ export interface RestaurantImage {
   createdAt: string;
 }
 
-export interface RestaurantSummary {
+export interface RestaurantRecord {
   id: number;
   ownerId: number;
   name: string;
@@ -42,8 +42,15 @@ export interface RestaurantSummary {
   status: RestaurantStatus;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface RestaurantSummary extends RestaurantRecord {
   categories: RestaurantCategoryMapping[];
   images: RestaurantImage[];
+}
+
+export interface RestaurantWithCategories extends RestaurantRecord {
+  categories: RestaurantCategoryMapping[];
 }
 
 export interface RestaurantSearchParams {
@@ -86,6 +93,61 @@ export interface MenuItem {
   isAvailable: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface MenuItemImage {
+  id: number;
+  menuItemId: number;
+  imageUrl: string;
+  altText: string | null;
+  isPrimary: boolean;
+  createdAt: string;
+}
+
+export interface ManagedMenuItem extends MenuItem {
+  menuCategory: MenuCategory;
+  images: MenuItemImage[];
+}
+
+export interface CreateRestaurantInput {
+  name: string;
+  description?: string;
+  address: string;
+  city: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  openingHours?: string;
+}
+
+export type UpdateRestaurantInput = Partial<CreateRestaurantInput>;
+
+export interface CreateRestaurantCategoryInput {
+  name: string;
+  description?: string;
+}
+
+export interface CreateMenuCategoryInput {
+  name: string;
+  displayOrder?: number;
+}
+
+export type UpdateMenuCategoryInput = Partial<CreateMenuCategoryInput>;
+
+export interface CreateMenuItemInput {
+  menuCategoryId: number;
+  name: string;
+  description?: string;
+  price: number;
+  isAvailable?: boolean;
+}
+
+export type UpdateMenuItemInput = Partial<CreateMenuItemInput>;
+
+export interface CreateImageInput {
+  imageUrl: string;
+  altText?: string;
+  isPrimary?: boolean;
 }
 
 export interface RestaurantDetail extends RestaurantSummary {

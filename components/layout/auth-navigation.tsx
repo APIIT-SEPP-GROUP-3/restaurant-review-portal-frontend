@@ -51,6 +51,15 @@ export function AuthNavigation() {
 
   return (
     <div className="flex items-center gap-2 sm:gap-3">
+      {user.role === "RESTAURANT_OWNER" || user.role === "ADMIN" ? (
+        <Link
+          href="/manage/restaurants"
+          className="hidden rounded-full px-4 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-50 md:inline-flex"
+        >
+          Manage
+        </Link>
+      ) : null}
+
       {user.role === "MODERATOR" || user.role === "ADMIN" ? (
         <Link
           href="/moderation"
