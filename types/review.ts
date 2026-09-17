@@ -45,6 +45,13 @@ export interface RestaurantReview {
   ratings: ReviewRating[];
 }
 
+export interface MenuItemReview extends RestaurantReview {
+  restaurant: {
+    id: number;
+    name: string;
+  };
+}
+
 export interface RatingSummaryItem {
   ratingTypeId: number;
   name: string;

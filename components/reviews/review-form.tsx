@@ -16,10 +16,15 @@ import type { RatingType } from "@/types/review";
 
 interface ReviewFormProps {
   restaurantId: number;
+  menuItemId?: number;
   ratingTypes: RatingType[];
 }
 
-export function ReviewForm({ restaurantId, ratingTypes }: ReviewFormProps) {
+export function ReviewForm({
+  restaurantId,
+  menuItemId,
+  ratingTypes,
+}: ReviewFormProps) {
   const storedUser = useSyncExternalStore(
     subscribeToAuthSession,
     getAuthSessionSnapshot,
@@ -63,6 +68,7 @@ export function ReviewForm({ restaurantId, ratingTypes }: ReviewFormProps) {
       await createReview(
         {
           restaurantId,
+          menuItemId,
           title: title.trim() || undefined,
           reviewText: reviewText.trim(),
           ratings: selectedRatings,
