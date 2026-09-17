@@ -4,7 +4,7 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer id="about" className="bg-zinc-950 text-zinc-300">
+    <footer className="border-t border-zinc-800 bg-zinc-950 text-zinc-300">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-3 lg:px-8">
         <div>
           <Link
@@ -36,10 +36,22 @@ export function Footer() {
               Home
             </Link>
             <Link
-              href="/#featured"
+              href="/restaurants"
               className="transition-colors hover:text-orange-400"
             >
               Restaurants
+            </Link>
+            <Link
+              href="/menu"
+              className="transition-colors hover:text-orange-400"
+            >
+              Menu
+            </Link>
+            <Link
+              href="/#about"
+              className="transition-colors hover:text-orange-400"
+            >
+              About
             </Link>
           </nav>
         </div>
