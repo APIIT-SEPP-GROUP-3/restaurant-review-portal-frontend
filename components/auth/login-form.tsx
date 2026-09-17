@@ -7,7 +7,11 @@ import { ApiError } from "@/lib/api-client";
 import { storeAuthSession } from "@/lib/auth-storage";
 import { loginUser } from "@/services/auth-service";
 
-export function LoginForm() {
+interface LoginFormProps {
+  returnPath?: string;
+}
+
+export function LoginForm({ returnPath = "/" }: LoginFormProps) {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -27,7 +31,7 @@ export function LoginForm() {
       });
 
       storeAuthSession(loginData);
-      router.push("/");
+      router.replace(returnPath);
       router.refresh();
     } catch (error) {
       setErrorMessage(
