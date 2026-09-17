@@ -5,6 +5,7 @@ import { AuthNavigation } from "@/components/layout/auth-navigation";
 const navigationLinks = [
   { label: "Home", href: "/" },
   { label: "Restaurants", href: "/restaurants" },
+  { label: "Menu", href: "/menu" },
   { label: "About", href: "/#about" },
 ];
 
