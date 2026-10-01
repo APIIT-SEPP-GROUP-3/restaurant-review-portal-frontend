@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { RouteGuard } from "@/components/auth/route-guard";
 import { ModerationDashboard } from "@/components/moderation/moderation-dashboard";
 
 export const metadata: Metadata = {
@@ -8,5 +9,12 @@ export const metadata: Metadata = {
 };
 
 export default function ModerationPage() {
-  return <ModerationDashboard />;
+  return (
+    <RouteGuard
+      allowedRoles={["MODERATOR", "ADMIN"]}
+      returnPath="/moderation"
+    >
+      <ModerationDashboard />
+    </RouteGuard>
+  );
 }

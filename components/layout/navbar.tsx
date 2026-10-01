@@ -1,13 +1,8 @@
 import Link from "next/link";
 
 import { AuthNavigation } from "@/components/layout/auth-navigation";
-
-const navigationLinks = [
-  { label: "Home", href: "/" },
-  { label: "Restaurants", href: "/restaurants" },
-  { label: "Menu", href: "/menu" },
-  { label: "About", href: "/#about" },
-];
+import { MobileNavigation } from "@/components/layout/mobile-navigation";
+import { NavigationLinks } from "@/components/layout/navigation-links";
 
 export function Navbar() {
   return (
@@ -26,22 +21,15 @@ export function Navbar() {
           </span>
         </Link>
 
-        <nav
-          aria-label="Main navigation"
-          className="hidden items-center gap-8 md:flex"
-        >
-          {navigationLinks.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              className="text-sm font-medium text-zinc-600 transition-colors hover:text-orange-500"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
+        <div className="hidden md:block">
+          <NavigationLinks />
+        </div>
 
-        <AuthNavigation />
+        <div className="hidden md:block">
+          <AuthNavigation />
+        </div>
+
+        <MobileNavigation />
       </div>
     </header>
   );

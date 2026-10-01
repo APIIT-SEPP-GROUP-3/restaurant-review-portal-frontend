@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { RouteGuard } from "@/components/auth/route-guard";
 import { RestaurantWorkspace } from "@/components/management/restaurant-workspace";
 
 export const metadata: Metadata = {
@@ -16,5 +17,12 @@ export default async function ManageRestaurantPage({
 }: ManageRestaurantPageProps) {
   const { id } = await params;
 
-  return <RestaurantWorkspace restaurantId={Number(id)} />;
+  return (
+    <RouteGuard
+      allowedRoles={["RESTAURANT_OWNER", "ADMIN"]}
+      returnPath={`/manage/restaurants/${id}`}
+    >
+      <RestaurantWorkspace restaurantId={Number(id)} />
+    </RouteGuard>
+  );
 }

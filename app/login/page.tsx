@@ -8,7 +8,26 @@ export const metadata: Metadata = {
   description: "Log in to your DineRate account.",
 };
 
-export default function LoginPage() {
+type SearchParamValue = string | string[] | undefined;
+
+interface LoginPageProps {
+  searchParams: Promise<Record<string, SearchParamValue>>;
+}
+
+function safeReturnPath(value: SearchParamValue): string {
+  const path = Array.isArray(value) ? value[0] : value;
+
+  if (!path || !path.startsWith("/") || path.startsWith("//")) {
+    return "/";
+  }
+
+  return path;
+}
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const query = await searchParams;
+  const returnPath = safeReturnPath(query.next);
+
   return (
     <AuthShell
       title="Welcome back"
@@ -17,7 +36,7 @@ export default function LoginPage() {
       alternateLabel="Create an account"
       alternateHref="/register"
     >
-      <LoginForm />
+      <LoginForm returnPath={returnPath} />
     </AuthShell>
   );
 }

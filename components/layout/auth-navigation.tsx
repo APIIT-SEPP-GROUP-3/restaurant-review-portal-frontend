@@ -12,7 +12,15 @@ import {
   subscribeToAuthSession,
 } from "@/lib/auth-storage";
 
-export function AuthNavigation() {
+interface AuthNavigationProps {
+  mobile?: boolean;
+  onNavigate?: () => void;
+}
+
+export function AuthNavigation({
+  mobile = false,
+  onNavigate,
+}: AuthNavigationProps) {
   const router = useRouter();
 
   const storedUser = useSyncExternalStore(
@@ -25,23 +33,34 @@ export function AuthNavigation() {
 
   function handleLogout() {
     clearAuthSession();
+    onNavigate?.();
     router.push("/");
     router.refresh();
   }
 
   if (!user) {
     return (
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className={mobile ? "grid grid-cols-2 gap-3" : "flex items-center gap-3"}>
         <Link
           href="/login"
-          className="hidden rounded-full px-4 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:bg-orange-50 sm:inline-flex"
+          onClick={onNavigate}
+          className={
+            mobile
+              ? "inline-flex items-center justify-center rounded-xl border border-zinc-200 px-4 py-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+              : "inline-flex rounded-full px-4 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:bg-orange-50"
+          }
         >
           Log in
         </Link>
 
         <Link
           href="/register"
-          className="inline-flex rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+          onClick={onNavigate}
+          className={
+            mobile
+              ? "inline-flex items-center justify-center rounded-xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white hover:bg-orange-600"
+              : "inline-flex rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+          }
         >
           Sign up
         </Link>
@@ -50,11 +69,22 @@ export function AuthNavigation() {
   }
 
   return (
-    <div className="flex items-center gap-2 sm:gap-3">
+    <div className={mobile ? "flex flex-col gap-2" : "flex items-center gap-3"}>
+      {mobile ? (
+        <p className="px-4 pb-2 text-sm text-zinc-600">
+          Signed in as <strong className="text-zinc-900">{user.firstName}</strong>
+        </p>
+      ) : null}
+
       {user.role === "RESTAURANT_OWNER" || user.role === "ADMIN" ? (
         <Link
           href="/manage/restaurants"
-          className="hidden rounded-full px-4 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-50 md:inline-flex"
+          onClick={onNavigate}
+          className={
+            mobile
+              ? "rounded-xl px-4 py-3 text-sm font-semibold text-orange-600 hover:bg-orange-50"
+              : "inline-flex rounded-full px-4 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-50"
+          }
         >
           Manage
         </Link>
@@ -63,20 +93,31 @@ export function AuthNavigation() {
       {user.role === "MODERATOR" || user.role === "ADMIN" ? (
         <Link
           href="/moderation"
-          className="hidden rounded-full px-4 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-50 md:inline-flex"
+          onClick={onNavigate}
+          className={
+            mobile
+              ? "rounded-xl px-4 py-3 text-sm font-semibold text-orange-600 hover:bg-orange-50"
+              : "inline-flex rounded-full px-4 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-50"
+          }
         >
           Moderation
         </Link>
       ) : null}
 
-      <span className="hidden text-sm text-zinc-600 sm:inline">
-        Hi, <strong className="text-zinc-900">{user.firstName}</strong>
-      </span>
+      {!mobile ? (
+        <span className="text-sm text-zinc-600">
+          Hi, <strong className="text-zinc-900">{user.firstName}</strong>
+        </span>
+      ) : null}
 
       <button
         type="button"
         onClick={handleLogout}
-        className="inline-flex rounded-full border border-orange-200 px-4 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-50"
+        className={
+          mobile
+            ? "inline-flex items-center justify-center rounded-xl border border-orange-200 px-4 py-3 text-sm font-semibold text-orange-600 hover:bg-orange-50"
+            : "inline-flex rounded-full border border-orange-200 px-4 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-50"
+        }
       >
         Log out
       </button>
