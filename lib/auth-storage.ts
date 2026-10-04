@@ -10,6 +10,11 @@ export function storeAuthSession({ token, user }: LoginData): void {
   window.dispatchEvent(new Event(AUTH_SESSION_EVENT));
 }
 
+export function storeAuthUser(user: AuthUser): void {
+  localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+  window.dispatchEvent(new Event(AUTH_SESSION_EVENT));
+}
+
 export function getAuthToken(): string | null {
   return localStorage.getItem(AUTH_TOKEN_KEY);
 }
