@@ -23,6 +23,7 @@ export interface RestaurantImage {
   id: number;
   restaurantId: number;
   imageUrl: string;
+  objectKey: string | null;
   altText: string | null;
   isPrimary: boolean;
   createdAt: string;
@@ -99,6 +100,7 @@ export interface MenuItemImage {
   id: number;
   menuItemId: number;
   imageUrl: string;
+  objectKey: string | null;
   altText: string | null;
   isPrimary: boolean;
   createdAt: string;
@@ -145,7 +147,7 @@ export interface CreateMenuItemInput {
 export type UpdateMenuItemInput = Partial<CreateMenuItemInput>;
 
 export interface CreateImageInput {
-  imageUrl: string;
+  objectKey: string;
   altText?: string;
   isPrimary?: boolean;
 }
@@ -154,4 +156,11 @@ export interface RestaurantDetail extends RestaurantSummary {
   owner: RestaurantOwner;
   menuCategories: MenuCategory[];
   menuItems: MenuItem[];
+}
+
+export interface ImageUploadPresign {
+  uploadUrl: string;
+  objectKey: string;
+  publicUrl: string;
+  expiresIn: number;
 }

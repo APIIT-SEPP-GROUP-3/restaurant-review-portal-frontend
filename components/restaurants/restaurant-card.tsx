@@ -7,7 +7,8 @@ interface RestaurantCardProps {
 }
 
 export function RestaurantCard({ restaurant }: RestaurantCardProps) {
-  const primaryImage = restaurant.images.find((image) => image.isPrimary);
+  const primaryImage =
+    restaurant.images.find((image) => image.isPrimary) ?? restaurant.images[0];
   const categories = restaurant.categories.slice(0, 3);
 
   return (
