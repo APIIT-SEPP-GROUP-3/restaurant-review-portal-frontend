@@ -11,6 +11,20 @@ interface LoginFormProps {
   returnPath?: string;
 }
 
+function getSafeReturnPath(returnPath: string): string {
+  try {
+    const target = new URL(returnPath, window.location.origin);
+
+    if (target.origin !== window.location.origin) {
+      return "/";
+    }
+
+    return `${target.pathname}${target.search}${target.hash}`;
+  } catch {
+    return "/";
+  }
+}
+
 export function LoginForm({ returnPath = "/" }: LoginFormProps) {
   const router = useRouter();
 
@@ -31,7 +45,7 @@ export function LoginForm({ returnPath = "/" }: LoginFormProps) {
       });
 
       storeAuthSession(loginData);
-      router.replace(returnPath);
+      router.replace(getSafeReturnPath(returnPath));
       router.refresh();
     } catch (error) {
       setErrorMessage(
