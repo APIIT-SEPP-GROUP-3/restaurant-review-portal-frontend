@@ -24,5 +24,6 @@ export function getCurrentUser(token: string): Promise<AuthUser> {
   return apiRequest<AuthUser>("/auth/me", {
     method: "GET",
     token,
+    cache: "no-store",
   });
 }

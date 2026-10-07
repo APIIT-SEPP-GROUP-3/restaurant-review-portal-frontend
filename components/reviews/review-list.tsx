@@ -1,3 +1,4 @@
+import { formatRating } from "@/lib/format-rating";
 import type { RestaurantReview } from "@/types/review";
 import type { ReviewComment } from "@/types/review";
 
@@ -16,14 +17,6 @@ function formatDate(value: string): string {
   }).format(new Date(value));
 }
 
-function formatRating(value: number | string | null): string {
-  if (value === null) {
-    return "Not rated";
-  }
-
-  const rating = Number(value);
-  return Number.isFinite(rating) ? `${rating.toFixed(1)}/5` : "Not rated";
-}
 
 export function ReviewList({
   reviews,

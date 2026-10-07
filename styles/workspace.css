@@ -1,0 +1,63 @@
+/* Both staff areas own their viewport; customer pages keep their normal flow. */
+body:has(.staff-workspace) { height: 100dvh; overflow: hidden; }
+body:has(.staff-workspace) > header { flex-shrink: 0; background: var(--panel-surface); border-color: var(--panel-border); }
+body:has(.staff-workspace) > header > div { max-width: none; }
+body:has(.staff-workspace) > main { min-height: 0; overflow: hidden; }
+body:has(.staff-workspace) > footer { display: none; }
+.staff-workspace { background: var(--panel-background); color: var(--panel-text); }
+.workspace-grid { display: grid; height: 100%; min-height: 0; grid-template-rows: auto minmax(0, 1fr); }
+.workspace-sidebar { min-height: 0; padding: 1rem 1.25rem; background: var(--panel-sidebar); color: white; }
+.workspace-content { min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 1rem; }
+.workspace-card { border: 1px solid var(--panel-border); border-radius: var(--radius-card); background: var(--panel-surface); }
+.workspace-button { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; padding: .625rem 1rem; font-size: .875rem; font-weight: 600; background: var(--panel-surface); border: 1px solid var(--panel-border); color: var(--panel-text); }
+.workspace-button:hover { background: var(--panel-subtle); }
+.workspace-button-primary { background: var(--brand-action); border-color: var(--brand-action); color: white; }
+.workspace-button-primary:hover { background: var(--brand-action-hover); border-color: var(--brand-action-hover); }
+.workspace-button:disabled { opacity: .5; cursor: not-allowed; }
+.workspace-tabs { display: flex; gap: .25rem; padding: .25rem; border: 1px solid var(--panel-border); border-radius: var(--radius-control); background: var(--panel-surface); }
+.workspace-tab { padding: .5rem .75rem; font-size: .875rem; font-weight: 600; color: var(--panel-muted); }
+.workspace-tab:hover { background: var(--panel-subtle); }
+.workspace-tab[aria-pressed="true"] { background: var(--panel-sidebar); color: white; }
+.workspace-pagination { display: flex; flex-shrink: 0; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; border-top: 1px solid var(--panel-border); background: var(--panel-surface); padding: .75rem 1rem; }
+.workspace-page { display: flex; width: 2.5rem; height: 2.5rem; align-items: center; justify-content: center; font-size: .875rem; font-weight: 600; }
+.workspace-page:hover { background: var(--panel-background); }
+.workspace-page[aria-current="page"] { background: var(--brand); color: white; }
+.staff-workspace button, .staff-workspace .workspace-button, .workspace-dialog button { border-radius: var(--radius-control); }
+.workspace-dialog { border-radius: var(--radius-dialog); }
+.staff-workspace :is(button, a, input, textarea, select):focus-visible, .workspace-dialog :is(button, a, input, textarea, select):focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+@media (min-width: 640px) {
+  .workspace-content { padding: var(--workspace-spacing); }
+  .workspace-pagination { padding-inline: var(--workspace-spacing); }
+}
+@media (min-width: 1024px) {
+  .workspace-grid { grid-template-columns: var(--workspace-sidebar-width) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+  .workspace-sidebar { height: 100%; overflow-y: auto; padding-block: var(--workspace-spacing); }
+}
+.workspace-input { width: 100%; border-radius: var(--radius-input); border: 1px solid var(--panel-border); background: var(--panel-surface); padding: .75rem 1rem; color: var(--panel-text); outline: none; }
+.workspace-input::placeholder { color: var(--panel-muted); }
+.workspace-input:focus { border-color: var(--brand); }
+.workspace-navigation { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+.workspace-nav-item { flex: 1; border-radius: var(--radius-control); padding: .75rem 1rem; text-align: left; font-size: .875rem; font-weight: 600; color: var(--panel-sidebar-muted); }
+.workspace-nav-item:hover { background: var(--panel-sidebar-hover); }
+.workspace-nav-item[aria-pressed="true"], .workspace-nav-item[aria-current="page"] { background: var(--brand); color: white; }
+.workspace-nav-item:disabled { opacity: .5; }
+.workspace-table { width: 100%; text-align: left; font-size: .875rem; }
+.workspace-table thead { background: var(--panel-subtle); color: var(--panel-muted); font-size: .75rem; }
+.workspace-table th { padding: .75rem 1rem; font-weight: 500; }
+.workspace-table th:last-child { position: sticky; right: 0; text-align: right; background: var(--panel-subtle); }
+.workspace-table tbody tr + tr { border-top: 1px solid var(--panel-border); }
+.workspace-table tbody tr:hover { background: var(--panel-subtle); }
+.workspace-table td:last-child { position: sticky; right: 0; background: var(--panel-surface); }
+.workspace-table tbody tr:hover td:last-child { background: var(--panel-subtle); }
+.workspace-table tbody tr[aria-selected="true"], .workspace-table tbody tr[aria-selected="true"] td:last-child { background: var(--brand-soft); }
+@media (min-width: 1024px) { .workspace-navigation { flex-direction: column; margin-top: var(--workspace-spacing); } .workspace-nav-item { flex: none; } }
+
+.workspace-toast { position: fixed; top: 5rem; right: 1rem; z-index: 60; display: flex; align-items: center; gap: .75rem; max-width: calc(100vw - 2rem); border: 1px solid var(--status-success-border); border-radius: var(--radius-card); background: var(--panel-surface); color: var(--status-success-text); padding: 1rem 1.25rem; font-size: .875rem; box-shadow: 0 20px 25px -5px #0000001a; }
+@media (min-width: 640px) { .workspace-toast { max-width: 28rem; } }
+
+.workspace-input-compact { padding: .5rem .75rem; }
+.workspace-input::file-selector-button { border-radius: var(--radius-control); }
+
+.workspace-back-link { display: flex; align-items: center; gap: .75rem; margin-top: 1rem; padding: .625rem 1rem; border: 1px solid var(--panel-sidebar-muted); border-radius: var(--radius-control); color: white; background: var(--panel-sidebar-hover); font-size: .875rem; font-weight: 600; }
+.workspace-back-link:hover { border-color: var(--brand); background: var(--brand); }
+.workspace-table[data-clickable-rows="true"] tbody tr[data-record-id] { cursor: pointer; }

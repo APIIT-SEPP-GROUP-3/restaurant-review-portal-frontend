@@ -1,16 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { TableSkeleton } from "@/components/ui/loading-layouts";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
+import { WorkspaceDialog } from "@/components/workspace/workspace-dialog";
+import { WorkspaceToast } from "@/components/workspace/workspace-toast";
+import { WorkspaceMessage } from "@/components/workspace/workspace-message";
+import { WorkspaceNavigation } from "@/components/workspace/workspace-navigation";
+import { WorkspaceShell, WorkspaceSidebar, WorkspaceHeader } from "@/components/workspace/workspace-shell";
+import { WorkspaceTable } from "@/components/workspace/workspace-table";
+import { Pagination, WORKSPACE_PAGE_SIZE } from "@/components/workspace/pagination";
+import { WorkspaceTabs } from "@/components/workspace/workspace-tabs";
+import { ApproveAndReply } from "@/components/moderation/approve-and-reply";
+import { ReviewModerationCard, CommentModerationCard } from "@/components/moderation/submission-content";
+import { formatDate } from "@/lib/format-date";
 import { ApiError } from "@/lib/api-client";
-import {
-  getAuthSessionSnapshot,
-  getAuthToken,
-  getServerAuthSessionSnapshot,
-  parseStoredUser,
-  subscribeToAuthSession,
-} from "@/lib/auth-storage";
+import { getAuthToken } from "@/lib/auth-storage";
+import { useAuthUser } from "@/hooks/use-auth-user";
 import {
   approveComment,
   approveReview,
@@ -34,13 +41,6 @@ const statusOptions: ModerationStatus[] = [
   "REJECTED",
 ];
 
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("en-LK", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  }).format(new Date(value));
-}
 
 function getErrorMessage(error: unknown): string {
   return error instanceof ApiError
@@ -49,12 +49,8 @@ function getErrorMessage(error: unknown): string {
 }
 
 export function ModerationDashboard() {
-  const storedUser = useSyncExternalStore(
-    subscribeToAuthSession,
-    getAuthSessionSnapshot,
-    getServerAuthSessionSnapshot,
-  );
-  const user = useMemo(() => parseStoredUser(storedUser), [storedUser]);
+  const user = useAuthUser();
+
 
   const [queueType, setQueueType] = useState<QueueType>("reviews");
   const [status, setStatus] = useState<ModerationStatus>("PENDING");
@@ -66,6 +62,21 @@ export function ModerationDashboard() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [publishedTarget, setPublishedTarget] = useState<{ type: QueueType; id: number } | null>(null);
+
+  const [search, setSearch] = useState("");
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [modalMode, setModalMode] = useState<"view" | "approve" | "reject" | "reply" | null>(null);
+  const [page, setPage] = useState(1);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [replyWorkflowId, setReplyWorkflowId] = useState<number | null>(null);
+  const actionLock = useRef(false);
+
+  useEffect(() => {
+    if (!successMessage) return;
+    const timeout = window.setTimeout(() => setSuccessMessage(""), 6000);
+    return () => window.clearTimeout(timeout);
+  }, [successMessage]);
 
   const canModerate = user?.role === "MODERATOR" || user?.role === "ADMIN";
 
@@ -112,7 +123,7 @@ export function ModerationDashboard() {
     return () => {
       isActive = false;
     };
-  }, [canModerate, queueType, status]);
+  }, [canModerate, queueType, status, refreshKey, user?.id]);
 
   function removeModeratedItem(type: QueueType, id: number) {
     if (type === "reviews") {
@@ -129,6 +140,8 @@ export function ModerationDashboard() {
       return;
     }
 
+    if (actionLock.current) return;
+    actionLock.current = true;
     setActionId(id);
     setErrorMessage("");
     setSuccessMessage("");
@@ -141,12 +154,16 @@ export function ModerationDashboard() {
       }
 
       removeModeratedItem(type, id);
+      setModalMode(null);
+      setSelectedId(null);
+      setPublishedTarget({ type, id });
       setSuccessMessage(
-        `${type === "reviews" ? "Review" : "Comment"} approved successfully.`,
+        `${type === "reviews" ? "Review" : "Comment"} #${id} approved successfully.`,
       );
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
+      actionLock.current = false;
       setActionId(null);
     }
   }
@@ -168,9 +185,12 @@ export function ModerationDashboard() {
       return;
     }
 
+    if (actionLock.current) return;
+    actionLock.current = true;
     setActionId(rejectTarget.id);
     setErrorMessage("");
     setSuccessMessage("");
+    setPublishedTarget(null);
 
     try {
       if (rejectTarget.type === "reviews") {
@@ -180,344 +200,155 @@ export function ModerationDashboard() {
       }
 
       removeModeratedItem(rejectTarget.type, rejectTarget.id);
+      setModalMode(null);
+      setSelectedId(null);
       setSuccessMessage(
-        `${rejectTarget.type === "reviews" ? "Review" : "Comment"} rejected successfully.`,
+        `${rejectTarget.type === "reviews" ? "Review" : "Comment"} #${rejectTarget.id} rejected successfully.`,
       );
       setRejectTarget(null);
       setRejectionReason("");
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
+      actionLock.current = false;
       setActionId(null);
     }
   }
 
   if (!user) {
     return (
-      <AccessMessage
+      <WorkspaceMessage
         title="Moderator login required"
         message="Log in with a moderator or administrator account to review submitted content."
-        showLogin
+        href="/login" action="Log in"
       />
     );
   }
 
   if (!canModerate) {
     return (
-      <AccessMessage
+      <WorkspaceMessage
         title="Access restricted"
         message="Your account does not have permission to access the moderation dashboard."
       />
     );
   }
 
-  const visibleItems = queueType === "reviews" ? reviews : comments;
+  if (!getAuthToken()) return <WorkspaceMessage title="Session expired" message="Please log in again to open moderation." href="/login" action="Log in" />;
 
-  return (
-    <section className="flex-1 bg-gradient-to-b from-orange-50/70 to-white px-4 py-12 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-orange-600">
-          Content moderation
-        </p>
-        <h1 className="mt-3 text-4xl font-bold tracking-tight text-zinc-950 sm:text-5xl">
-          Review community submissions
-        </h1>
-        <p className="mt-4 max-w-3xl text-lg text-zinc-600">
-          Approve suitable content or reject it with a clear reason.
-        </p>
+  const items = queueType === "reviews" ? reviews : comments;
+  const visibleItems = items.filter(item => {
+    const restaurant = "restaurant" in item ? item.restaurant : item.review.restaurant;
+    const text = "reviewText" in item ? `${item.title ?? ""} ${item.reviewText}` : item.commentText;
+    return `${restaurant.name} ${item.user.firstName} ${item.user.lastName} ${text}`.toLowerCase().includes(search.toLowerCase());
+  });
+  const pageCount = Math.max(1, Math.ceil(visibleItems.length / WORKSPACE_PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const pageItems = visibleItems.slice((currentPage - 1) * WORKSPACE_PAGE_SIZE, currentPage * WORKSPACE_PAGE_SIZE);
+  const selected = items.find(item => item.id === selectedId);
 
-        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-orange-100 bg-white p-4 shadow-sm">
-          <div className="flex rounded-xl bg-zinc-100 p-1">
-            {(["reviews", "comments"] as const).map((type) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => {
-                  setIsLoading(true);
-                  setErrorMessage("");
-                  setQueueType(type);
-                  setRejectTarget(null);
-                  setSuccessMessage("");
-                }}
-                className={`rounded-lg px-4 py-2 text-sm font-semibold capitalize transition ${
-                  queueType === type
-                    ? "bg-white text-orange-600 shadow-sm"
-                    : "text-zinc-600"
-                }`}
-              >
-                {type}
-              </button>
-            ))}
-          </div>
 
-          <label className="flex items-center gap-3 text-sm font-semibold text-zinc-700">
-            Status
-            <select
-              value={status}
-              onChange={(event) => {
-                setIsLoading(true);
-                setErrorMessage("");
-                setStatus(event.target.value as ModerationStatus);
-                setRejectTarget(null);
-                setSuccessMessage("");
-              }}
-              className="rounded-xl border border-zinc-300 bg-white px-4 py-2 outline-none focus:border-orange-500"
-            >
-              {statusOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option.charAt(0) + option.slice(1).toLowerCase()}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+  function openSubmission(id: number, mode: "view" | "approve" | "reject" | "reply") {
+    setSuccessMessage("");
+    setSelectedId(id); setModalMode(mode); setErrorMessage(""); setRejectionReason("");
+    setRejectTarget(mode === "reject" ? { type: queueType, id } : null);
+  }
 
-        {errorMessage ? (
-          <p role="alert" className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {errorMessage}
-          </p>
-        ) : null}
+  function closeSubmission() {
+    if (actionId !== null) return;
+    if (replyWorkflowId !== null) {
+      removeModeratedItem(queueType, replyWorkflowId);
+      setSuccessMessage("Submission approved. Any saved response remains in the Pending comments queue.");
+      setPublishedTarget({ type: queueType, id: replyWorkflowId });
+      setReplyWorkflowId(null);
+    }
+    setModalMode(null); setSelectedId(null); setRejectTarget(null); setErrorMessage("");
+  }
 
-        {successMessage ? (
-          <p role="status" className="mt-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-            {successMessage}
-          </p>
-        ) : null}
+  function changeQueue(type: QueueType) {
+    if (type === queueType) return;
+    setPage(1); setModalMode(null);
+    setIsLoading(true); setQueueType(type); setSelectedId(null); setReplyWorkflowId(null); setSearch("");
+    setRejectTarget(null); setErrorMessage(""); setSuccessMessage("");
+  }
 
-        {isLoading ? (
-          <div className="mt-8 rounded-3xl border border-orange-100 bg-white p-10 text-center text-zinc-600">
-            Loading {queueType}...
-          </div>
-        ) : visibleItems.length === 0 ? (
-          <div className="mt-8 rounded-3xl border border-dashed border-orange-200 bg-white p-10 text-center">
-            <h2 className="text-2xl font-bold text-zinc-950">Queue is empty</h2>
-            <p className="mt-2 text-zinc-600">
-              There are no {status.toLowerCase()} {queueType} to display.
-            </p>
-          </div>
-        ) : queueType === "reviews" ? (
-          <div className="mt-8 space-y-5">
-            {reviews.map((review) => (
-              <ReviewModerationCard
-                key={review.id}
-                review={review}
-                isWorking={actionId === review.id}
-                onApprove={() => void handleApprove("reviews", review.id)}
-                onReject={() => {
-                  setRejectTarget({ type: "reviews", id: review.id });
-                  setRejectionReason("");
-                }}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="mt-8 space-y-5">
-            {comments.map((comment) => (
-              <CommentModerationCard
-                key={comment.id}
-                comment={comment}
-                isWorking={actionId === comment.id}
-                onApprove={() => void handleApprove("comments", comment.id)}
-                onReject={() => {
-                  setRejectTarget({ type: "comments", id: comment.id });
-                  setRejectionReason("");
-                }}
-              />
-            ))}
-          </div>
-        )}
-
-        {rejectTarget ? (
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-5">
-            <label htmlFor="rejection-reason" className="block text-sm font-semibold text-red-900">
-              Rejection reason
-            </label>
-            <textarea
-              id="rejection-reason"
-              rows={3}
-              minLength={5}
-              maxLength={500}
-              value={rejectionReason}
-              onChange={(event) => setRejectionReason(event.target.value)}
-              placeholder="Explain why this content cannot be approved"
-              className="mt-2 w-full rounded-xl border border-red-200 bg-white px-4 py-3 outline-none focus:border-red-400"
-            />
-            <div className="mt-3 flex gap-3">
-              <button
-                type="button"
-                disabled={actionId !== null}
-                onClick={() => void handleReject()}
-                className="rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
-              >
-                Confirm rejection
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setRejectTarget(null);
-                  setRejectionReason("");
-                }}
-                className="rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : null}
-      </div>
-    </section>
-  );
-}
-
-function AccessMessage({
-  title,
-  message,
-  showLogin = false,
-}: {
-  title: string;
-  message: string;
-  showLogin?: boolean;
-}) {
-  return (
-    <section className="flex flex-1 items-center justify-center bg-orange-50/60 px-4 py-16">
-      <div className="max-w-lg rounded-3xl border border-orange-100 bg-white p-8 text-center shadow-sm">
-        <h1 className="text-3xl font-bold text-zinc-950">{title}</h1>
-        <p className="mt-3 text-zinc-600">{message}</p>
-        {showLogin ? (
-          <Link href="/login" className="mt-6 inline-flex rounded-full bg-orange-500 px-5 py-2.5 font-semibold text-white hover:bg-orange-600">
-            Log in
-          </Link>
-        ) : (
-          <Link href="/" className="mt-6 inline-flex font-semibold text-orange-600">
-            Return home
-          </Link>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function ModerationActions({
-  status,
-  isWorking,
-  onApprove,
-  onReject,
-}: {
-  status: ModerationStatus;
-  isWorking: boolean;
-  onApprove: () => void;
-  onReject: () => void;
-}) {
-  if (status !== "PENDING") {
-    return null;
+  function showApproved(type: QueueType, id: number) {
+    setIsLoading(true); setQueueType(type); setStatus("APPROVED"); setSearch("");
+    setPage(1); setModalMode("view");
+    setSelectedId(id); setRejectTarget(null); setReplyWorkflowId(null); setErrorMessage("");
+    setRefreshKey(key => key + 1);
   }
 
   return (
-    <div className="mt-5 flex flex-wrap gap-3">
-      <button
-        type="button"
-        disabled={isWorking}
-        onClick={onApprove}
-        className="rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60"
-      >
-        {isWorking ? "Working..." : "Approve"}
-      </button>
-      <button
-        type="button"
-        disabled={isWorking}
-        onClick={onReject}
-        className="rounded-full border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60"
-      >
-        Reject
-      </button>
-    </div>
-  );
-}
+    <>
+    <WorkspaceShell className="moderation-workspace" label="Moderation content" sidebar={
+      <WorkspaceSidebar title="Content moderation" identity={`${user.role === "ADMIN" ? "Administrator" : "Moderator"} · ${user.firstName}`} navigation={
+        <WorkspaceNavigation label="Moderation queues" active={queueType} disabled={actionId !== null} onSelect={type => changeQueue(type as QueueType)} items={[
+          { id: "reviews", label: "Customer reviews" }, { id: "comments", label: "Comments & replies" },
+        ]} />
+      }>
+        {user.role === "ADMIN" ? <Link href="/manage/restaurants" className="block text-sm text-white/60 hover:text-white">Restaurant management ↗</Link> : null}
+        <p className="pt-4 text-xs leading-6 text-white/40">Review content before publishing. Rejected submissions require a reason.</p>
+      </WorkspaceSidebar>
+    } footer={<Pagination label="Submission pagination" page={currentPage} total={visibleItems.length} onPageChange={setPage} loading={isLoading} />}>
+          <WorkspaceHeader breadcrumb={`Moderation / ${queueType}`} title={queueType === "reviews" ? "Customer reviews" : "Comments & replies"} description="View a submission or choose an action to open its full details." actions={
+            <button type="button" disabled={isLoading || actionId !== null} onClick={() => { setIsLoading(true); setErrorMessage(""); setRefreshKey(key => key + 1); }} className="workspace-button">Refresh queue</button>
+          } />
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+            <WorkspaceTabs label="Submission status" options={statusOptions.map(value => ({ value, label: value.charAt(0) + value.slice(1).toLowerCase() }))} value={status} disabled={actionId !== null} onChange={option => {
+              if (option === status) return;
+              setPage(1); setModalMode(null); setIsLoading(true); setStatus(option); setSelectedId(null); setRejectTarget(null); setErrorMessage(""); setSuccessMessage("");
+            }} />
+            <label className="min-w-0 flex-1 sm:max-w-xs"><span className="sr-only">Search loaded submissions</span><input type="search" value={search} onChange={event => { setSearch(event.target.value); setPage(1); }} placeholder="Search restaurant, author or text" className="workspace-input text-sm" /></label>
+          </div>
+          {errorMessage && !modalMode ? <p role="alert" className="mt-4 rounded-xl bg-danger-soft p-4 text-sm text-danger-text">{errorMessage}</p> : null}
+          {successMessage && (!modalMode || isLoading) ? <WorkspaceToast message={successMessage} onDismiss={() => setSuccessMessage("")} action={publishedTarget ? <button type="button" disabled={actionId !== null} onClick={() => showApproved(publishedTarget.type, publishedTarget.id)} className="shrink-0 px-3 py-2 text-xs font-semibold text-brand-hover hover:bg-brand-soft">View approved</button> : null} /> : null}
 
-function ReviewModerationCard({
-  review,
-  isWorking,
-  onApprove,
-  onReject,
-}: {
-  review: ModerationReview;
-  isWorking: boolean;
-  onApprove: () => void;
-  onReject: () => void;
-}) {
-  return (
-    <article className="rounded-3xl border border-orange-100 bg-white p-6 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-semibold text-orange-600">
-            {review.restaurant.name} · {review.restaurant.city}
-          </p>
-          <h2 className="mt-2 text-xl font-bold text-zinc-950">
-            {review.title ?? "Untitled review"}
-          </h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            {review.user.firstName} {review.user.lastName} · {formatDate(review.createdAt)}
-          </p>
-        </div>
-        <span className="rounded-full bg-orange-50 px-3 py-1 text-sm font-bold text-orange-600">
-          ★ {review.overallRating === null ? "—" : Number(review.overallRating).toFixed(1)}
-        </span>
-      </div>
-      <p className="mt-4 leading-7 text-zinc-700">{review.reviewText}</p>
-      {review.rejectionReason ? (
-        <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-          Rejection reason: {review.rejectionReason}
-        </p>
-      ) : null}
-      <ModerationActions
-        status={review.moderationStatus}
-        isWorking={isWorking}
-        onApprove={onApprove}
-        onReject={onReject}
-      />
-    </article>
-  );
-}
+          {isLoading ? <div className="workspace-card mt-6"><TableSkeleton label="Loading submissions" /></div> : (
+            <>
+              <div className="workspace-card mt-5 overflow-hidden">
+                <div className="flex items-center justify-between border-b border-panel-border px-5 py-4"><h3 className="text-sm font-semibold">{status.charAt(0) + status.slice(1).toLowerCase()} submissions</h3><span className="text-xs text-panel-muted">{visibleItems.length} matching · {items.length} total</span></div>
+                {visibleItems.length ? <WorkspaceTable onRowClick={id => openSubmission(id, "view")} label="Moderation submissions" header={<tr><th className="px-5 py-3 font-medium">Submission</th><th className="px-4 py-3 font-medium">Author</th><th className="hidden px-4 py-3 font-medium md:table-cell">Received</th><th className="sticky right-0 bg-panel-subtle px-4 py-3 text-right font-medium">Actions</th></tr>}>{pageItems.map(item => {
+                    const restaurant = "restaurant" in item ? item.restaurant : item.review.restaurant;
+                    const title = "reviewText" in item ? item.title ?? "Dining experience" : item.commentText;
+                    return <tr key={item.id} data-record-id={item.id} aria-selected={selected?.id === item.id}>
+                      <td className="h-18 max-w-xs px-5 py-3"><button type="button" disabled={actionId !== null} aria-pressed={selected?.id === item.id} onClick={() => openSubmission(item.id, "view")} className="w-full text-left"><span className="block truncate font-semibold">{title}</span><span className="mt-1 block text-xs text-panel-muted">{restaurant.name} · #{item.id}</span></button></td>
+                      <td className="px-4 py-4"><span className="block max-w-40 truncate">{item.user.firstName} {item.user.lastName}</span>{item.user.role ? <span className="mt-1 block text-xs capitalize text-zinc-400">{item.user.role.roleName.toLowerCase().replaceAll("_", " ")}</span> : null}</td>
+                      <td className="hidden whitespace-nowrap px-4 py-4 text-xs text-panel-muted md:table-cell">{formatDate(item.createdAt)}</td>
+                      <td className="px-3 py-3">
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <button type="button" aria-label={`View submission ${item.id}`} disabled={actionId !== null} onClick={() => openSubmission(item.id, "view")} className="rounded-full border border-panel-border bg-panel-surface px-3 py-2 text-xs font-semibold hover:bg-stone-100">View</button>
+                          {item.moderationStatus === "PENDING" ? <>
+                            <button type="button" aria-label={`Approve submission ${item.id}`} disabled={actionId !== null} onClick={() => openSubmission(item.id, "approve")} className="rounded-full bg-success px-3 py-2 text-xs font-semibold text-white hover:bg-success-hover">Approve</button>
+                            <button type="button" aria-label={`Reject submission ${item.id}`} disabled={actionId !== null} onClick={() => openSubmission(item.id, "reject")} className="rounded-full border border-danger-border bg-panel-surface px-3 py-2 text-xs font-semibold text-danger hover:bg-danger-soft">Reject</button>
+                            {user.role === "ADMIN" ? <button type="button" disabled={actionId !== null} onClick={() => openSubmission(item.id, "reply")} className="rounded-full bg-brand px-3 py-2 text-xs font-semibold text-white hover:bg-brand-hover">Approve & reply</button> : null}
+                          </> : null}
+                        </div>
+                      </td>
+                    </tr>;
+                  })}
+</WorkspaceTable> : <div className="p-8 text-center"><h3 className="font-semibold">{search ? "No matching submissions" : "All caught up"}</h3><p className="mt-2 text-sm text-panel-muted">{search ? "Try another search." : `No ${status.toLowerCase()} ${queueType} to display.`}</p></div>}
+              </div>
+            </>
+          )}
 
-function CommentModerationCard({
-  comment,
-  isWorking,
-  onApprove,
-  onReject,
-}: {
-  comment: ModerationComment;
-  isWorking: boolean;
-  onApprove: () => void;
-  onReject: () => void;
-}) {
-  return (
-    <article className="rounded-3xl border border-orange-100 bg-white p-6 shadow-sm">
-      <p className="text-sm font-semibold text-orange-600">
-        {comment.review.restaurant.name}
-      </p>
-      <h2 className="mt-2 text-lg font-bold text-zinc-950">
-        Comment on: {comment.review.title ?? "Untitled review"}
-      </h2>
-      <p className="mt-1 text-sm text-zinc-500">
-        {comment.user.firstName} {comment.user.lastName} · {formatDate(comment.createdAt)}
-      </p>
-      {comment.parentComment ? (
-        <p className="mt-4 rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
-          Replying to: {comment.parentComment.commentText}
-        </p>
-      ) : null}
-      <p className="mt-4 leading-7 text-zinc-700">{comment.commentText}</p>
-      {comment.rejectionReason ? (
-        <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-          Rejection reason: {comment.rejectionReason}
-        </p>
-      ) : null}
-      <ModerationActions
-        status={comment.moderationStatus}
-        isWorking={isWorking}
-        onApprove={onApprove}
-        onReject={onReject}
-      />
-    </article>
+    </WorkspaceShell>
+      {modalMode && selected && !isLoading ? <WorkspaceDialog key={`${queueType}-${selected.id}`} title={`${modalMode === "view" ? "View" : modalMode === "reply" ? "Approve and reply to" : modalMode === "approve" ? "Approve" : "Reject"} ${queueType === "reviews" ? "review" : "comment"} #${selected.id}`} busy={actionId !== null} onClose={closeSubmission} footer={selected.moderationStatus === "PENDING" ? <>
+        {modalMode === "reply" ? <button form="moderation-approval-response" type="submit" disabled={actionId !== null} className="rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{actionId !== null ? "Working..." : replyWorkflowId === selected.id ? "Retry response" : "Approve and reply"}</button> : null}
+        {selected.moderationStatus === "PENDING" && replyWorkflowId !== selected.id && modalMode !== "reply" ? <>
+          {modalMode === "reject" ? <button type="button" disabled={actionId !== null} onClick={() => void handleReject()} className="rounded-full bg-danger px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{actionId !== null ? "Rejecting..." : "Confirm rejection"}</button> : <button type="button" disabled={actionId !== null} onClick={() => void handleApprove(queueType, selected.id)} className="rounded-full bg-success px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{actionId !== null ? "Approving..." : "Confirm approval"}</button>}
+          {modalMode === "view" ? <button type="button" onClick={() => { setModalMode("reject"); setRejectTarget({ type: queueType, id: selected.id }); }} className="rounded-full border border-danger-border px-5 py-2.5 text-sm font-semibold text-danger" disabled={actionId !== null}>Reject</button> : null}
+          {modalMode === "view" && user.role === "ADMIN" ? <button type="button" disabled={actionId !== null} onClick={() => setModalMode("reply")} className="rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white">Approve & reply</button> : null}
+        </> : null}
+      </> : null}>
+        {successMessage ? <p role="status" className="mb-4 rounded-2xl bg-success-soft p-4 text-sm text-success-text">{successMessage}</p> : null}
+        {"reviewText" in selected ? <ReviewModerationCard review={selected} canReply={user.role === "ADMIN"} /> : <CommentModerationCard comment={selected} canReply={user.role === "ADMIN"} />}
+        <Link href={`/restaurants/${"restaurant" in selected ? selected.restaurant.id : selected.review.restaurant.id}`} className="mt-3 inline-flex text-xs font-semibold text-brand-hover">View restaurant ↗</Link>
+        {modalMode === "reject" ? <div className="mt-5"><label htmlFor="rejection-reason" className="block text-sm font-semibold">Rejection reason</label><textarea autoFocus id="rejection-reason" minLength={5} maxLength={500} rows={3} value={rejectionReason} disabled={actionId !== null} onChange={event => setRejectionReason(event.target.value)} className="mt-2 w-full rounded-2xl border border-stone-300 p-3 text-sm outline-none focus:border-brand" /></div> : null}
+        {errorMessage ? <p role="alert" className="mt-4 text-sm text-danger-text">{errorMessage}</p> : null}
+        {modalMode === "reply" && user.role === "ADMIN" && selected.moderationStatus === "PENDING" ? <ApproveAndReply formId="moderation-approval-response" externalSubmit type={queueType} id={selected.id} disabled={actionId !== null} reviewId={"reviewText" in selected ? selected.id : selected.reviewId} onBusy={busy => { if (busy) { setErrorMessage(""); setSuccessMessage(""); } actionLock.current = busy; setActionId(busy ? selected.id : null); }} onOriginalApproved={() => setReplyWorkflowId(selected.id)} onComplete={() => { removeModeratedItem(queueType, selected.id); setReplyWorkflowId(null); setPublishedTarget({ type: queueType, id: selected.id }); setSuccessMessage("Submission and response published successfully."); showApproved(queueType, selected.id); }} /> : null}
+      </WorkspaceDialog> : null}
+
+    </>
   );
 }

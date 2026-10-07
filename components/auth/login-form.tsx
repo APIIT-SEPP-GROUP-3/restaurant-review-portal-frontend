@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import { ApiError } from "@/lib/api-client";
-import { storeAuthSession } from "@/lib/auth-storage";
+import { AuthStorageError, storeAuthSession } from "@/lib/auth-storage";
 import { loginUser } from "@/services/auth-service";
 
 interface LoginFormProps {
@@ -27,6 +27,7 @@ function getSafeReturnPath(returnPath: string): string {
 
 export function LoginForm({ returnPath = "/" }: LoginFormProps) {
   const router = useRouter();
+  const submitting = useRef(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,6 +36,8 @@ export function LoginForm({ returnPath = "/" }: LoginFormProps) {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting.current) return;
+    submitting.current = true;
     setErrorMessage("");
     setIsSubmitting(true);
 
@@ -46,20 +49,19 @@ export function LoginForm({ returnPath = "/" }: LoginFormProps) {
 
       storeAuthSession(loginData);
       router.replace(getSafeReturnPath(returnPath));
-      router.refresh();
     } catch (error) {
       setErrorMessage(
-        error instanceof ApiError
+        error instanceof ApiError || error instanceof AuthStorageError
           ? error.message
           : "Unable to log in. Please try again.",
       );
-    } finally {
+      submitting.current = false;
       setIsSubmitting(false);
     }
   }
 
   return (
-    <form className="space-y-5" onSubmit={handleSubmit}>
+    <form className="space-y-5" onSubmit={handleSubmit} aria-busy={isSubmitting}>
       {errorMessage ? (
         <div
           role="alert"
@@ -83,6 +85,7 @@ export function LoginForm({ returnPath = "/" }: LoginFormProps) {
           type="email"
           autoComplete="email"
           required
+          disabled={isSubmitting}
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           placeholder="you@example.com"
@@ -108,6 +111,7 @@ export function LoginForm({ returnPath = "/" }: LoginFormProps) {
           type="password"
           autoComplete="current-password"
           required
+          disabled={isSubmitting}
           minLength={1}
           value={password}
           onChange={(event) => setPassword(event.target.value)}

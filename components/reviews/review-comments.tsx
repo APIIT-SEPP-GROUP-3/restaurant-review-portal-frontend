@@ -1,16 +1,11 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 
 import { ApiError } from "@/lib/api-client";
-import {
-  getAuthSessionSnapshot,
-  getAuthToken,
-  getServerAuthSessionSnapshot,
-  parseStoredUser,
-  subscribeToAuthSession,
-} from "@/lib/auth-storage";
+import { getAuthToken } from "@/lib/auth-storage";
+import { useAuthUser } from "@/hooks/use-auth-user";
 import { createReviewComment } from "@/services/review-service";
 import type {
   ReviewComment,
@@ -21,6 +16,10 @@ import type {
 interface ReviewCommentsProps {
   reviewId: number;
   comments: ReviewComment[];
+  initiallyOpen?: boolean;
+  readOnly?: boolean;
+  onBusy?: (busy: boolean) => void;
+  focusComposer?: boolean;
 }
 
 interface CommentAuthorLabelProps {
@@ -71,13 +70,9 @@ function CommentReply({ reply }: { reply: ReviewCommentReply }) {
   );
 }
 
-export function ReviewComments({ reviewId, comments }: ReviewCommentsProps) {
-  const storedUser = useSyncExternalStore(
-    subscribeToAuthSession,
-    getAuthSessionSnapshot,
-    getServerAuthSessionSnapshot,
-  );
-  const user = useMemo(() => parseStoredUser(storedUser), [storedUser]);
+export function ReviewComments({ reviewId, comments, initiallyOpen = false, readOnly = false, onBusy, focusComposer = false }: ReviewCommentsProps) {
+  const user = useAuthUser();
+  const submitting = useRef(false);
 
   const [commentText, setCommentText] = useState("");
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
@@ -85,13 +80,15 @@ export function ReviewComments({ reviewId, comments }: ReviewCommentsProps) {
   const [successMessage, setSuccessMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const canComment =
+  const canComment = !readOnly && (
     user?.role === "CUSTOMER" ||
     user?.role === "RESTAURANT_OWNER" ||
-    user?.role === "ADMIN";
+    user?.role === "ADMIN"
+  );
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting.current || !canComment) return;
     setErrorMessage("");
     setSuccessMessage("");
 
@@ -101,7 +98,13 @@ export function ReviewComments({ reviewId, comments }: ReviewCommentsProps) {
       return;
     }
 
+    if (commentText.trim().length < 2) {
+      setErrorMessage("Enter at least 2 characters.");
+      return;
+    }
+    submitting.current = true;
     setIsSubmitting(true);
+    onBusy?.(true);
 
     try {
       await createReviewComment(
@@ -125,12 +128,14 @@ export function ReviewComments({ reviewId, comments }: ReviewCommentsProps) {
           : "Unable to submit your comment. Please try again.",
       );
     } finally {
+      submitting.current = false;
       setIsSubmitting(false);
+      onBusy?.(false);
     }
   }
 
   return (
-    <details className="mt-5 border-t border-slate-200/70 pt-4">
+    <details open={initiallyOpen} className="mt-5 border-t border-slate-200/70 pt-4">
       <summary className="w-fit cursor-pointer text-sm font-semibold text-zinc-600 hover:text-orange-600">
         {comments.length ? `Conversation (${comments.length})` : "Start a conversation"}
       </summary>
@@ -152,6 +157,7 @@ export function ReviewComments({ reviewId, comments }: ReviewCommentsProps) {
               {canComment ? (
                 <button
                   type="button"
+                  disabled={isSubmitting}
                   onClick={() => {
                     setReplyingTo(comment.id);
                     setCommentText("");
@@ -174,7 +180,7 @@ export function ReviewComments({ reviewId, comments }: ReviewCommentsProps) {
         null
       )}
 
-      {!user ? (
+      {readOnly ? null : !user ? (
         <p className="mt-4 text-sm text-zinc-600">
           <Link href="/login" className="font-semibold text-orange-600">
             Log in
@@ -188,6 +194,7 @@ export function ReviewComments({ reviewId, comments }: ReviewCommentsProps) {
               <span>Writing a reply</span>
               <button
                 type="button"
+                disabled={isSubmitting}
                 onClick={() => {
                   setReplyingTo(null);
                   setCommentText("");
@@ -217,6 +224,8 @@ export function ReviewComments({ reviewId, comments }: ReviewCommentsProps) {
           <textarea
             id={`comment-${reviewId}`}
             required
+            autoFocus={focusComposer}
+            disabled={isSubmitting}
             minLength={2}
             maxLength={2000}
             rows={3}

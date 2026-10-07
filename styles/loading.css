@@ -1,0 +1,4 @@
+.shimmer { position: relative; overflow: hidden; background: var(--skeleton-base); }
+.shimmer::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, var(--skeleton-highlight), transparent); animation: shimmer-sweep 1.6s ease-in-out infinite; }
+@keyframes shimmer-sweep { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .shimmer::after { animation: none; transform: none; opacity: .35; } }

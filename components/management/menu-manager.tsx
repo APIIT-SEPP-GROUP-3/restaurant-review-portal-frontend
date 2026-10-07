@@ -1,20 +1,17 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
-
-import { MenuItemForm, menuInputClass } from "@/components/management/menu-item-form";
-import { ImageUploader } from "@/components/management/image-uploader";
+import { useRef, useState } from "react";
+import { MenuCategoryForm } from "@/components/management/menu-category-form";
+import { MenuItemForm } from "@/components/management/menu-item-form";
+import { MenuItemImages } from "@/components/management/menu-item-images";
+import { Pagination, WORKSPACE_PAGE_SIZE } from "@/components/workspace/pagination";
+import { WorkspaceDialog } from "@/components/workspace/workspace-dialog";
+import { WorkspaceTable } from "@/components/workspace/workspace-table";
+import { WorkspaceTabs } from "@/components/workspace/workspace-tabs";
+import { WorkspaceToast } from "@/components/workspace/workspace-toast";
 import { ApiError } from "@/lib/api-client";
-import {
-  createMenuCategory,
-  deleteMenuItemImage,
-  updateMenuCategory,
-  updateMenuItemAvailability,
-} from "@/services/restaurant-management-service";
-import type {
-  ManagedMenuItem,
-  MenuCategory,
-} from "@/types/restaurant";
+import { createMenuCategory, updateMenuCategory, updateMenuItemAvailability } from "@/services/restaurant-management-service";
+import type { CreateMenuCategoryInput, ManagedMenuItem, MenuCategory } from "@/types/restaurant";
 
 interface MenuManagerProps {
   restaurantId: number;
@@ -24,40 +21,51 @@ interface MenuManagerProps {
   onChanged: () => Promise<void>;
 }
 
-function messageFrom(error: unknown): string {
-  return error instanceof ApiError
-    ? error.message
-    : "Unable to complete the menu request.";
-}
+type DialogState =
+  | { mode: "add-item" | "add-category" }
+  | { mode: "view" | "edit" | "availability" | "images"; id: number }
+  | { mode: "edit-category"; id: number };
 
-export function MenuManager({
-  restaurantId,
-  menuCategories,
-  menuItems,
-  token,
-  onChanged,
-}: MenuManagerProps) {
-  const [categoryName, setCategoryName] = useState("");
-  const [categoryOrder, setCategoryOrder] = useState("0");
+export function MenuManager({ restaurantId, menuCategories, menuItems, token, onChanged }: MenuManagerProps) {
+  const [tab, setTab] = useState<"items" | "categories">("items");
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [availability, setAvailability] = useState("all");
+  const [dialog, setDialog] = useState<DialogState | null>(null);
   const [isWorking, setIsWorking] = useState(false);
+  const [formBusy, setFormBusy] = useState(false);
   const [error, setError] = useState("");
   const [feedback, setFeedback] = useState("");
-
   const working = useRef(false);
+  const busy = isWorking || formBusy;
+  const item = dialog && "id" in dialog && dialog.mode !== "edit-category" ? menuItems.find(item => item.id === dialog.id) : undefined;
+  const category = dialog?.mode === "edit-category" ? menuCategories.find(category => category.id === dialog.id) : undefined;
+  const filteredItems = menuItems.filter(item =>
+    `${item.name} ${item.menuCategory.name}`.toLowerCase().includes(search.toLowerCase()) &&
+    (availability === "all" || item.isAvailable === (availability === "available")));
+  const filteredCategories = [...menuCategories]
+    .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name))
+    .filter(category => category.name.toLowerCase().includes(search.toLowerCase()));
+  const total = tab === "items" ? filteredItems.length : filteredCategories.length;
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(total / WORKSPACE_PAGE_SIZE)));
+  const start = (currentPage - 1) * WORKSPACE_PAGE_SIZE;
+  const pageItems = filteredItems.slice(start, start + WORKSPACE_PAGE_SIZE);
+  const pageCategories = filteredCategories.slice(start, start + WORKSPACE_PAGE_SIZE);
+
+  function open(next: DialogState) { setError(""); setFeedback(""); setDialog(next); }
+  function close() { if (!busy && !working.current) { setDialog(null); setError(""); } }
 
   async function runAction(action: () => Promise<unknown>, success: string) {
-    if (working.current) return false;
+    if (working.current || formBusy) return false;
     working.current = true;
-    setIsWorking(true);
-    setError("");
-    setFeedback("");
+    setIsWorking(true); setError(""); setFeedback("");
     try {
       await action();
       await onChanged();
       setFeedback(success);
       return true;
     } catch (requestError) {
-      setError(messageFrom(requestError));
+      setError(requestError instanceof ApiError ? requestError.message : "Unable to complete the menu request.");
       return false;
     } finally {
       working.current = false;
@@ -65,191 +73,85 @@ export function MenuManager({
     }
   }
 
-  async function handleCreateCategory(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const succeeded = await runAction(
-      () =>
-        createMenuCategory(
-          restaurantId,
-          {
-            name: categoryName.trim(),
-            displayOrder: Number(categoryOrder),
-          },
-          token,
-        ),
-      "Menu category created successfully.",
+  async function saveCategory(input: CreateMenuCategoryInput) {
+    const saved = await runAction(
+      () => category ? updateMenuCategory(category.id, input, token) : createMenuCategory(restaurantId, input, token),
+      category ? "Menu category updated successfully." : "Menu category added successfully.",
     );
-    if (succeeded) {
-      setCategoryName("");
-      setCategoryOrder("0");
-    }
+    if (saved) setDialog(null);
   }
 
-  async function handleUpdateCategory(
-    event: FormEvent<HTMLFormElement>,
-    categoryId: number,
-  ) {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    await runAction(
-      () =>
-        updateMenuCategory(
-          categoryId,
-          {
-            name: String(formData.get("name") ?? "").trim(),
-            displayOrder: Number(formData.get("displayOrder")),
-          },
-          token,
-        ),
-      "Menu category updated successfully.",
-    );
-  }
+  const title = dialog?.mode === "add-item" ? "Add menu item" : dialog?.mode === "add-category" ? "Add menu category" :
+    dialog?.mode === "edit-category" ? "Edit menu category" : dialog?.mode === "edit" ? `Edit ${item?.name}` :
+    dialog?.mode === "images" ? `Photos of ${item?.name}` : dialog?.mode === "availability" ? "Update availability" : item?.name ?? "Menu item";
 
-  return (
-    <section className="rounded-3xl border border-orange-100 bg-white p-6 text-zinc-950 shadow-sm sm:p-8">
-      <h2 className="text-2xl font-bold text-zinc-950">Menu management</h2>
-      <p className="mt-2 text-sm text-zinc-500">
-        Organize menu categories and keep item information available to customers.
-      </p>
-
-      {error ? <p role="alert" className="mt-4 text-sm text-red-700">{error}</p> : null}
-      {feedback ? <p role="status" className="mt-4 text-sm text-green-700">{feedback}</p> : null}
-
-      <div className="mt-6 space-y-6">
-        <form className="rounded-2xl bg-orange-50 p-5" onSubmit={handleCreateCategory}>
-          <h3 className="font-bold text-zinc-950">Add menu category</h3>
-          <label className="mt-3 block text-sm font-semibold text-zinc-800">Category name
-          <input
-            required
-            minLength={2}
-            maxLength={100}
-            value={categoryName}
-            onChange={(event) => setCategoryName(event.target.value)}
-            placeholder="e.g. Main dishes"
-            className={`${menuInputClass} mt-2`}
-          />
-          </label>
-          <label className="mt-3 block text-sm font-semibold text-zinc-800">Display order
-          <input
-            type="number"
-            min={0}
-            step={1}
-            required
-            value={categoryOrder}
-            onChange={(event) => setCategoryOrder(event.target.value)}
-            className={`${menuInputClass} mt-2`}
-            aria-label="Display order"
-          />
-          </label>
-          <button disabled={isWorking} className="mt-3 rounded-xl bg-orange-500 px-5 py-2.5 font-semibold text-white disabled:opacity-60">
-            Add category
-          </button>
-        </form>
-
-        <div className="rounded-2xl bg-zinc-50 p-5">
-          <h3 className="mb-4 font-bold text-zinc-950">Add menu item</h3>
-          <MenuItemForm restaurantId={restaurantId} categories={menuCategories} token={token} onChanged={onChanged} />
-        </div>
+  return <section className="text-panel-text">
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <WorkspaceTabs label="Menu management lists" options={[{ value: "items", label: `Menu items (${menuItems.length})` }, { value: "categories", label: `Menu categories (${menuCategories.length})` }]} value={tab} onChange={value => { setTab(value); setPage(1); setSearch(""); }} />
+      <div className="flex gap-2">
+        <button type="button" onClick={() => open({ mode: "add-category" })} className="workspace-button">Add category</button>
+        <button type="button" disabled={!menuCategories.length} onClick={() => open({ mode: "add-item" })} className="workspace-button workspace-button-primary">Add menu item</button>
       </div>
-
-      {menuCategories.length > 0 ? (
-        <div className="mt-8">
-          <h3 className="font-bold text-zinc-950">Menu categories</h3>
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
-            {menuCategories.map((category) => (
-              <form key={category.id} onSubmit={(event) => void handleUpdateCategory(event, category.id)} className="grid grid-cols-[1fr_6rem_auto] gap-2 rounded-xl border border-zinc-200 p-3">
-                <input name="name" required minLength={2} maxLength={100} defaultValue={category.name} className="min-w-0 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-zinc-950" aria-label="Menu category name" />
-                <input name="displayOrder" type="number" min={0} required defaultValue={category.displayOrder} className="min-w-0 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-zinc-950" aria-label="Display order" />
-                <button disabled={isWorking} className="font-semibold text-orange-600 disabled:opacity-60">Save</button>
-              </form>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      <div className="mt-8 space-y-4">
-        <h3 className="font-bold text-zinc-950">Menu items</h3>
-        {menuItems.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-zinc-200 p-6 text-center text-sm text-zinc-500">No menu items added yet.</p>
-        ) : (
-          menuItems.map((item) => (
-            <article key={item.id} className="rounded-2xl border border-zinc-200 p-5">
-              {item.images.length > 0 ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={(item.images.find(image => image.isPrimary) ?? item.images[0]).imageUrl} alt={(item.images.find(image => image.isPrimary) ?? item.images[0]).altText ?? item.name} className="mb-4 h-40 w-full rounded-xl object-cover sm:w-56" />
-              ) : null}
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-orange-600">{item.menuCategory.name}</p>
-                  <h4 className="mt-1 text-xl font-bold text-zinc-950">{item.name}</h4>
-                  {item.description ? <p className="mt-2 text-sm text-zinc-600">{item.description}</p> : null}
-                  <p className="mt-1 text-sm text-zinc-500">LKR {Number(item.price).toFixed(2)}</p>
-                </div>
-                <button
-                  type="button"
-                  disabled={isWorking}
-                  onClick={() => void runAction(() => updateMenuItemAvailability(item.id, !item.isAvailable, token), "Menu item availability updated.")}
-                  className={`rounded-full px-4 py-2 text-sm font-semibold ${item.isAvailable ? "bg-green-50 text-green-700" : "bg-zinc-100 text-zinc-600"}`}
-                >
-                  {item.isAvailable ? "Available" : "Unavailable"}
-                </button>
-              </div>
-
-              <details className="mt-4">
-                <summary className="cursor-pointer text-sm font-semibold text-orange-600">Edit item</summary>
-                <div className="mt-4">
-                  <MenuItemForm restaurantId={restaurantId} categories={menuCategories} item={item} token={token} onChanged={onChanged} />
-                </div>
-              </details>
-
-              <MenuItemImages item={item} token={token} isWorking={isWorking} runAction={runAction} onChanged={onChanged} />
-            </article>
-          ))
-        )}
-      </div>
-    </section>
-  );
-}
-
-function MenuItemImages({
-  item,
-  token,
-  isWorking,
-  runAction,
-  onChanged,
-}: {
-  item: ManagedMenuItem;
-  token: string;
-  isWorking: boolean;
-  onChanged: () => Promise<void>;
-  runAction: (action: () => Promise<unknown>, success: string) => Promise<boolean>;
-}) {
-  return (
-    <details className="mt-4 border-t border-zinc-100 pt-4">
-      <summary className="cursor-pointer text-sm font-semibold text-orange-600">Manage item images ({item.images.length})</summary>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {item.images.map((image) => (
-          <span key={image.id} className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-600">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={image.imageUrl} alt={image.altText ?? item.name} className="h-12 w-12 rounded-lg object-cover" />
-            {image.isPrimary ? "Primary" : "Image"} #{image.id}
-            <button
-              type="button"
-              aria-label={`Delete image of ${item.name}`}
-              disabled={isWorking}
-              onClick={() => {
-                if (window.confirm("Delete this menu item image?")) {
-                  void runAction(() => deleteMenuItemImage(item.id, image.id, token), "Menu item image deleted successfully.");
-                }
-              }}
-              className="font-bold text-red-600"
-            >
-              ×
-            </button>
-          </span>
-        ))}
-      </div>
-      <ImageUploader resource="menu-items" resourceId={item.id} token={token} disabled={isWorking} onChanged={onChanged} />
-    </details>
-  );
+    </div>
+    {!menuCategories.length ? <p className="mt-3 text-sm text-panel-muted">Add a menu category to start adding dishes.</p> : null}
+    <div className="mt-4 flex flex-wrap gap-3">
+      <label className="min-w-0 flex-1 sm:max-w-sm"><span className="sr-only">Search {tab === "items" ? "menu items" : "menu categories"}</span><input type="search" placeholder={tab === "items" ? "Search item or category" : "Search category"} value={search} onChange={event => { setSearch(event.target.value); setPage(1); }} className="workspace-input text-sm" /></label>
+      {tab === "items" ? <label><span className="sr-only">Filter availability</span><select value={availability} onChange={event => { setAvailability(event.target.value); setPage(1); }} className="workspace-input text-sm"><option value="all">All availability</option><option value="available">Available</option><option value="unavailable">Unavailable</option></select></label> : null}
+    </div>
+    {feedback && !dialog ? <WorkspaceToast message={feedback} onDismiss={() => setFeedback("")} /> : null}
+    <div className="workspace-card mt-4 overflow-hidden">
+      <div className="flex justify-between gap-3 border-b border-panel-border px-5 py-4"><h3 className="text-sm font-semibold">{tab === "items" ? "Menu items" : "Menu categories"}</h3><span className="text-xs text-panel-muted">{total} matching</span></div>
+      {!total ? <p className="p-8 text-center text-sm text-panel-muted">{search ? "No matches. Try another search." : tab === "items" ? "No menu items match this filter." : "No menu categories added yet."}</p> : tab === "items" ?
+        <WorkspaceTable onRowClick={id => open({ mode: "view", id })} label="Menu items" header={<tr><th>Item</th><th className="hidden md:table-cell">Category</th><th>Price</th><th>Availability</th><th>Actions</th></tr>}>
+          {pageItems.map(item => {
+            const image = item.images.find(image => image.isPrimary) ?? item.images[0];
+            return <tr key={item.id} data-record-id={item.id}>
+              <td className="h-18 max-w-xs px-5 py-3"><div className="flex items-center gap-3">
+                {image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={image.imageUrl} alt="" className="size-10 shrink-0 rounded-lg object-cover" />
+                ) : <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-soft font-semibold text-brand-hover">{item.name.charAt(0)}</span>}
+                <button type="button" onClick={() => open({ mode: "view", id: item.id })} className="min-w-0 text-left"><span className="block truncate font-semibold">{item.name}</span><span className="mt-1 block text-xs text-panel-muted">#{item.id}</span></button>
+              </div></td>
+              <td className="hidden px-4 py-3 text-panel-muted md:table-cell">{item.menuCategory.name}</td>
+              <td className="whitespace-nowrap px-4 py-3">LKR {Number(item.price).toFixed(2)}</td>
+              <td className="px-4 py-3"><span className={`rounded-full px-3 py-1 text-xs font-semibold ${item.isAvailable ? "bg-success-soft text-success-text" : "bg-panel-subtle text-panel-muted"}`}>{item.isAvailable ? "Available" : "Unavailable"}</span></td>
+              <td className="px-3 py-3"><div className="flex flex-wrap justify-end gap-2">
+                <button type="button" onClick={() => open({ mode: "view", id: item.id })} className="workspace-button">View</button>
+                <button type="button" onClick={() => open({ mode: "edit", id: item.id })} className="workspace-button">Edit</button>
+                <button type="button" onClick={() => open({ mode: "availability", id: item.id })} className="workspace-button">{item.isAvailable ? "Make unavailable" : "Make available"}</button>
+                <button type="button" onClick={() => open({ mode: "images", id: item.id })} className="workspace-button">Photos ({item.images.length})</button>
+              </div></td>
+            </tr>;
+          })}
+        </WorkspaceTable> : <WorkspaceTable onRowClick={id => open({ mode: "edit-category", id })} label="Menu categories" header={<tr><th>Category</th><th>Display order</th><th>Items</th><th>Actions</th></tr>}>
+          {pageCategories.map(category => <tr key={category.id} data-record-id={category.id}><td className="h-18 px-5 py-3 font-semibold">{category.name}</td><td className="px-4 py-3">{category.displayOrder}</td><td className="px-4 py-3">{menuItems.filter(item => item.menuCategoryId === category.id).length}</td><td className="px-3 py-3 text-right"><button type="button" onClick={() => open({ mode: "edit-category", id: category.id })} className="workspace-button">Edit category</button></td></tr>)}
+        </WorkspaceTable>}
+      <Pagination label="Menu pagination" page={currentPage} total={total} onPageChange={setPage} />
+    </div>
+    {dialog ? <WorkspaceDialog key={`${dialog.mode}-${"id" in dialog ? dialog.id : "new"}`} title={title} busy={busy} onClose={close} footer={
+      dialog.mode === "add-item" || dialog.mode === "edit" ? <button type="submit" form="menu-item-editor" disabled={busy || !menuCategories.length} className="workspace-button workspace-button-primary">{busy ? "Saving..." : dialog.mode === "edit" ? "Save changes" : "Add menu item"}</button> :
+      dialog.mode === "add-category" || dialog.mode === "edit-category" ? <button type="submit" form="menu-category-editor" disabled={busy} className="workspace-button workspace-button-primary">{busy ? "Saving..." : "Save category"}</button> :
+      item && dialog.mode === "availability" ? <button type="button" disabled={busy} onClick={async () => {
+        if (await runAction(() => updateMenuItemAvailability(item.id, !item.isAvailable, token), `${item.name} is now ${item.isAvailable ? "unavailable" : "available"}.`)) setDialog(null);
+      }} className="workspace-button workspace-button-primary">{busy ? "Updating..." : item.isAvailable ? "Confirm unavailable" : "Confirm available"}</button> :
+      item && dialog.mode === "view" ? <><button type="button" onClick={() => open({ mode: "edit", id: item.id })} className="workspace-button workspace-button-primary">Edit item</button><button type="button" onClick={() => open({ mode: "availability", id: item.id })} className="workspace-button">Update availability</button><button type="button" onClick={() => open({ mode: "images", id: item.id })} className="workspace-button">Manage photos</button></> : null
+    }>
+      {error ? <p role="alert" className="mb-4 rounded-2xl bg-danger-soft p-4 text-sm text-danger-text">{error}</p> : null}
+      {feedback ? <p role="status" className="mb-4 rounded-2xl bg-success-soft p-4 text-sm text-success-text">{feedback}</p> : null}
+      {dialog.mode === "add-item" || dialog.mode === "edit" ? <MenuItemForm restaurantId={restaurantId} categories={menuCategories} item={item} token={token} onChanged={onChanged} formId="menu-item-editor" externalSubmit onBusy={setFormBusy} onSaved={() => { setDialog(null); setFeedback(item ? "Menu item updated successfully." : "Menu item added successfully."); }} /> : null}
+      {dialog.mode === "add-category" || dialog.mode === "edit-category" ? <MenuCategoryForm category={category} busy={busy} formId="menu-category-editor" onSave={saveCategory} /> : null}
+      {item && (dialog.mode === "view" || dialog.mode === "availability") ? <div>
+        {dialog.mode === "view" && item.images.length ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={(item.images.find(image => image.isPrimary) ?? item.images[0]).imageUrl} alt={(item.images.find(image => image.isPrimary) ?? item.images[0]).altText ?? item.name} className="mb-5 max-h-64 w-full rounded-2xl object-cover" />
+        ) : null}
+        <p className="text-sm text-panel-muted">{item.menuCategory.name} · #{item.id}</p><h3 className="mt-2 text-xl font-bold">{item.name}</h3>
+        <p className="mt-3 whitespace-pre-line text-sm leading-6">{item.description || "No description added."}</p>
+        <p className="mt-4 font-semibold">LKR {Number(item.price).toFixed(2)}</p><p className="mt-2 text-sm text-panel-muted">Currently {item.isAvailable ? "available" : "unavailable"}</p>
+        {dialog.mode === "availability" ? <p className="mt-4 rounded-2xl bg-brand-soft p-4 text-sm">{item.isAvailable ? "Mark this dish as unavailable to customers?" : "Make this dish available to customers?"}</p> : null}
+      </div> : null}
+      {item && dialog.mode === "images" ? <MenuItemImages item={item} token={token} busy={busy} runAction={runAction} onChanged={onChanged} onBusy={setFormBusy} /> : null}
+    </WorkspaceDialog> : null}
+  </section>;
 }

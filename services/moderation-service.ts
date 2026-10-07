@@ -11,7 +11,7 @@ export function getReviewsForModeration(
 ): Promise<ModerationReview[]> {
   return apiRequest<ModerationReview[]>(
     `/moderation/reviews?status=${status}`,
-    { token },
+    { token, cache: "no-store" },
   );
 }
 
@@ -46,7 +46,7 @@ export function getCommentsForModeration(
 ): Promise<ModerationComment[]> {
   return apiRequest<ModerationComment[]>(
     `/moderation/comments?status=${status}`,
-    { token },
+    { token, cache: "no-store" },
   );
 }
 

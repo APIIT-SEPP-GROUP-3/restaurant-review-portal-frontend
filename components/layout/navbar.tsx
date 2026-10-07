@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 import { AuthNavigation } from "@/components/layout/auth-navigation";
 import { MobileNavigation } from "@/components/layout/mobile-navigation";
@@ -12,9 +13,7 @@ export function Navbar() {
           href="/"
           className="flex items-center gap-2 text-xl font-bold text-zinc-900"
         >
-          <span className="flex size-9 items-center justify-center rounded-xl bg-orange-500 text-white">
-            D
-          </span>
+          <Image src="/dinerate-logo.png" alt="" width={44} height={44} className="size-11 shrink-0 object-contain" loading="eager" />
 
           <span>
             Dine<span className="text-orange-500">Rate</span>

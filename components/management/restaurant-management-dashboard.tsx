@@ -1,16 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { TableSkeleton } from "@/components/ui/loading-layouts";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { ApiError } from "@/lib/api-client";
-import {
-  getAuthSessionSnapshot,
-  getAuthToken,
-  getServerAuthSessionSnapshot,
-  parseStoredUser,
-  subscribeToAuthSession,
-} from "@/lib/auth-storage";
+import { getAuthToken } from "@/lib/auth-storage";
+import { useAuthUser } from "@/hooks/use-auth-user";
 import {
   createRestaurant,
   updateRestaurant,
@@ -22,6 +18,14 @@ import type {
   RestaurantSummary,
 } from "@/types/restaurant";
 
+import { WorkspaceToast } from "@/components/workspace/workspace-toast";
+import { WorkspaceMessage } from "@/components/workspace/workspace-message";
+import { WorkspaceNavigation } from "@/components/workspace/workspace-navigation";
+import { WorkspaceShell, WorkspaceSidebar, WorkspaceHeader } from "@/components/workspace/workspace-shell";
+import { WorkspaceDialog } from "@/components/workspace/workspace-dialog";
+import { WorkspaceTable } from "@/components/workspace/workspace-table";
+import { Pagination, WORKSPACE_PAGE_SIZE } from "@/components/workspace/pagination";
+
 import { RestaurantForm } from "@/components/management/restaurant-form";
 
 function getErrorMessage(error: unknown): string {
@@ -30,14 +34,23 @@ function getErrorMessage(error: unknown): string {
     : "Unable to complete the restaurant request.";
 }
 
-export function RestaurantManagementDashboard() {
-  const storedUser = useSyncExternalStore(
-    subscribeToAuthSession,
-    getAuthSessionSnapshot,
-    getServerAuthSessionSnapshot,
-  );
-  const user = useMemo(() => parseStoredUser(storedUser), [storedUser]);
+async function fetchManagedRestaurants() {
+  const first = await getRestaurants({ page: 1, limit: 50, sortBy: "name", sortOrder: "asc" });
+  const restaurants = [...first.restaurants];
+  for (let page = 2; page <= first.pagination.totalPages; page++) {
+    const result = await getRestaurants({ page, limit: 50, sortBy: "name", sortOrder: "asc" });
+    restaurants.push(...result.restaurants);
+  }
+  return { restaurants, pagination: first.pagination };
+}
 
+export function RestaurantManagementDashboard() {
+  const user = useAuthUser();
+
+
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [formBusy, setFormBusy] = useState(false);
   const [restaurants, setRestaurants] = useState<RestaurantSummary[]>([]);
   const [selectedRestaurant, setSelectedRestaurant] =
     useState<RestaurantRecord | null>(null);
@@ -46,6 +59,12 @@ export function RestaurantManagementDashboard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
+  useEffect(() => {
+    if (!successMessage) return;
+    const timer = window.setTimeout(() => setSuccessMessage(""), 6000);
+    return () => window.clearTimeout(timer);
+  }, [successMessage]);
 
   const canManage =
     user?.role === "RESTAURANT_OWNER" || user?.role === "ADMIN";
@@ -57,7 +76,7 @@ export function RestaurantManagementDashboard() {
 
     let isActive = true;
 
-    void getRestaurants({ limit: 50, sortBy: "name", sortOrder: "asc" })
+    void fetchManagedRestaurants()
       .then((result) => {
         if (!isActive) {
           return;
@@ -92,11 +111,7 @@ export function RestaurantManagementDashboard() {
       return;
     }
 
-    const result = await getRestaurants({
-      limit: 50,
-      sortBy: "name",
-      sortOrder: "asc",
-    });
+    const result = await fetchManagedRestaurants();
 
     setRestaurants(
       user.role === "ADMIN"
@@ -132,173 +147,60 @@ export function RestaurantManagementDashboard() {
 
   if (!user) {
     return (
-      <AccessMessage
+      <WorkspaceMessage
         title="Owner login required"
         message="Log in with a restaurant owner or administrator account to manage restaurants."
-        showLogin
+        href="/login" action="Log in"
       />
     );
   }
 
   if (!canManage) {
     return (
-      <AccessMessage
+      <WorkspaceMessage
         title="Access restricted"
         message="Your account does not have permission to manage restaurants."
       />
     );
   }
 
-  return (
-    <section className="flex-1 bg-gradient-to-b from-orange-50/70 to-white px-4 py-12 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl">
-        <div className="flex flex-wrap items-end justify-between gap-5">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-orange-600">
-              Restaurant management
-            </p>
-            <h1 className="mt-3 text-4xl font-bold tracking-tight text-zinc-950 sm:text-5xl">
-              Manage your restaurants
-            </h1>
-            <p className="mt-4 text-lg text-zinc-600">
-              Create restaurant profiles and keep their information current.
-            </p>
-          </div>
+  const filtered = restaurants.filter(restaurant => `${restaurant.name} ${restaurant.city}`.toLowerCase().includes(search.toLowerCase()));
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(filtered.length / WORKSPACE_PAGE_SIZE)));
+  const pageItems = filtered.slice((currentPage - 1) * WORKSPACE_PAGE_SIZE, currentPage * WORKSPACE_PAGE_SIZE);
+  function openCreate() { setShowCreateForm(true); setSelectedRestaurant(null); setErrorMessage(""); setSuccessMessage(""); }
+  function closeForm() { if (formBusy || isSubmitting) return; setShowCreateForm(false); setSelectedRestaurant(null); }
 
-          <button
-            type="button"
-            onClick={() => {
-              setShowCreateForm(true);
-              setSelectedRestaurant(null);
-              setErrorMessage("");
-              setSuccessMessage("");
-            }}
-            className="rounded-full bg-orange-500 px-6 py-3 font-semibold text-white hover:bg-orange-600"
-          >
-            Add restaurant
-          </button>
-        </div>
-
-        {errorMessage ? (
-          <p role="alert" className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {errorMessage}
-          </p>
-        ) : null}
-
-        {successMessage ? (
-          <p role="status" className="mt-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-            {successMessage}
-          </p>
-        ) : null}
-
-        {showCreateForm || selectedRestaurant ? (
-          <div className="mt-8 rounded-3xl border border-orange-100 bg-white p-6 shadow-sm sm:p-8">
-            <h2 className="text-2xl font-bold text-zinc-950">
-              {selectedRestaurant ? "Edit restaurant" : "Create restaurant"}
-            </h2>
-            <div className="mt-6">
-              <RestaurantForm
-                key={selectedRestaurant?.id ?? "new"}
-                restaurant={selectedRestaurant ?? undefined}
-                isSubmitting={isSubmitting}
-                onSubmit={handleSave}
-                token={getAuthToken() ?? ""}
-                onSaved={handleSaved}
-                images={restaurants.find((item) => item.id === selectedRestaurant?.id)?.images ?? []}
-                onCancel={() => {
-                  setShowCreateForm(false);
-                  setSelectedRestaurant(null);
-                }}
-              />
-            </div>
-          </div>
-        ) : null}
-
-        {isLoading ? (
-          <div className="mt-8 rounded-3xl border border-orange-100 bg-white p-10 text-center text-zinc-600">
-            Loading restaurants...
-          </div>
-        ) : restaurants.length === 0 ? (
-          <div className="mt-8 rounded-3xl border border-dashed border-orange-200 bg-white p-10 text-center">
-            <h2 className="text-2xl font-bold text-zinc-950">
-              No restaurants to manage
-            </h2>
-            <p className="mt-2 text-zinc-600">
-              Create your first restaurant to begin managing its menu and images.
-            </p>
-          </div>
-        ) : (
-          <div className="mt-8 grid gap-5 md:grid-cols-2">
-            {restaurants.map((restaurant) => (
-              <article
-                key={restaurant.id}
-                className="rounded-3xl border border-orange-100 bg-white p-6 shadow-sm"
-              >
-                <p className="text-sm font-semibold uppercase tracking-wider text-orange-600">
-                  {restaurant.city}
-                </p>
-                <h2 className="mt-2 text-2xl font-bold text-zinc-950">
-                  {restaurant.name}
-                </h2>
-                <p className="mt-3 line-clamp-2 text-zinc-600">
-                  {restaurant.description ?? restaurant.address}
-                </p>
-                <div className="mt-5 flex flex-wrap gap-3">
-                  <Link
-                    href={`/manage/restaurants/${restaurant.id}`}
-                    className="rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
-                  >
-                    Manage menu & images
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedRestaurant(restaurant);
-                      setShowCreateForm(false);
-                      setErrorMessage("");
-                      setSuccessMessage("");
-                    }}
-                    className="rounded-full border border-orange-200 px-4 py-2 text-sm font-semibold text-orange-600 hover:bg-orange-50"
-                  >
-                    Edit details
-                  </button>
-                  <Link
-                    href={`/restaurants/${restaurant.id}`}
-                    className="rounded-full px-4 py-2 text-sm font-semibold text-zinc-600 hover:bg-zinc-50"
-                  >
-                    View public page
-                  </Link>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
+  return <>
+    <WorkspaceShell label="Restaurant management content" sidebar={
+      <WorkspaceSidebar title="Restaurant management" identity={`${user.role === "ADMIN" ? "Administrator" : "Restaurant owner"} · ${user.firstName}`} navigation={
+        <WorkspaceNavigation label="Restaurant management" active="restaurants" onSelect={openCreate} items={[
+          { id: "restaurants", label: "Restaurants", href: "/manage/restaurants" }, { id: "create", label: "Add restaurant" },
+        ]} />
+      }>
+        {user.role === "ADMIN" ? <Link href="/moderation" className="block text-sm text-white/60 hover:text-white">Content moderation ↗</Link> : null}
+      </WorkspaceSidebar>
+    } footer={<Pagination label="Restaurant pagination" page={currentPage} total={filtered.length} onPageChange={setPage} loading={isLoading} />}>
+      <WorkspaceHeader breadcrumb="Management / Restaurants" title="Restaurants" description="Manage restaurant details, menus, photos, and customer feedback." actions={
+        <div className="flex gap-2"><button type="button" disabled={isLoading} onClick={async () => { setIsLoading(true); setErrorMessage(""); try { await reloadRestaurants(); } catch (error) { setErrorMessage(getErrorMessage(error)); } finally { setIsLoading(false); } }} className="workspace-button">Refresh</button><button type="button" onClick={openCreate} className="workspace-button workspace-button-primary">Add restaurant</button></div>
+      } />
+      <label className="mt-6 block max-w-sm"><span className="sr-only">Search restaurants</span><input type="search" value={search} onChange={event => { setSearch(event.target.value); setPage(1); }} placeholder="Search restaurant or city" className="workspace-input" /></label>
+      {errorMessage ? <p role="alert" className="mt-4 rounded-2xl bg-danger-soft p-4 text-sm text-danger-text">{errorMessage}</p> : null}
+      {successMessage ? <WorkspaceToast message={successMessage} onDismiss={() => setSuccessMessage("")} /> : null}
+      <div className="workspace-card mt-5 overflow-hidden">
+        <div className="flex justify-between border-b border-panel-border px-5 py-4"><h3 className="text-sm font-semibold">Restaurant profiles</h3><span className="text-xs text-panel-muted">{filtered.length} matching · {restaurants.length} total</span></div>
+        {isLoading ? <TableSkeleton label="Loading restaurants" /> : !filtered.length ? <div className="p-8 text-center"><h3 className="font-semibold">{search ? "No matching restaurants" : "No restaurants to manage"}</h3><p className="mt-2 text-sm text-panel-muted">{search ? "Try another search." : "Add a restaurant to start managing its menu and photos."}</p></div> : <WorkspaceTable label="Restaurants" header={<tr><th className="px-5 py-3 font-medium">Restaurant</th><th className="px-4 py-3 font-medium">City</th><th className="hidden px-4 py-3 font-medium md:table-cell">Address</th><th className="sticky right-0 bg-panel-subtle px-4 py-3 text-right font-medium">Actions</th></tr>}>{pageItems.map(restaurant => <tr key={restaurant.id}>
+            <td className="h-18 max-w-xs px-5 py-3"><Link href={`/manage/restaurants/${restaurant.id}`} className="block truncate font-semibold hover:text-brand-hover">{restaurant.name}</Link><span className="mt-1 block text-xs text-panel-muted">#{restaurant.id}</span></td>
+            <td className="px-4 py-3">{restaurant.city}</td><td className="hidden max-w-xs truncate px-4 py-3 text-panel-muted md:table-cell">{restaurant.address}</td>
+            <td className="px-3 py-3"><div className="flex flex-wrap justify-end gap-2">
+              <Link href={`/manage/restaurants/${restaurant.id}`} className="workspace-button workspace-button-primary">Manage</Link>
+              <button type="button" onClick={() => { setSelectedRestaurant(restaurant); setShowCreateForm(false); setErrorMessage(""); setSuccessMessage(""); }} className="workspace-button">Edit details</button>
+              <Link href={`/restaurants/${restaurant.id}`} className="workspace-button">View</Link>
+            </div></td>
+          </tr>)}</WorkspaceTable>}
       </div>
-    </section>
-  );
-}
-
-function AccessMessage({
-  title,
-  message,
-  showLogin = false,
-}: {
-  title: string;
-  message: string;
-  showLogin?: boolean;
-}) {
-  return (
-    <section className="flex flex-1 items-center justify-center bg-orange-50/60 px-4 py-16">
-      <div className="max-w-lg rounded-3xl border border-orange-100 bg-white p-8 text-center shadow-sm">
-        <h1 className="text-3xl font-bold text-zinc-950">{title}</h1>
-        <p className="mt-3 text-zinc-600">{message}</p>
-        <Link
-          href={showLogin ? "/login" : "/"}
-          className="mt-6 inline-flex rounded-full bg-orange-500 px-5 py-2.5 font-semibold text-white hover:bg-orange-600"
-        >
-          {showLogin ? "Log in" : "Return home"}
-        </Link>
-      </div>
-    </section>
-  );
+    </WorkspaceShell>
+    {showCreateForm || selectedRestaurant ? <WorkspaceDialog title={selectedRestaurant ? "Edit restaurant" : "Add restaurant"} busy={formBusy || isSubmitting} onClose={closeForm}>
+      <RestaurantForm key={selectedRestaurant?.id ?? "new"} restaurant={selectedRestaurant ?? undefined} isSubmitting={isSubmitting} onSubmit={handleSave} token={getAuthToken() ?? ""} onSaved={handleSaved} onBusy={setFormBusy} images={restaurants.find(item => item.id === selectedRestaurant?.id)?.images ?? []} />
+    </WorkspaceDialog> : null}
+  </>;
 }

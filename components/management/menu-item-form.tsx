@@ -6,14 +6,18 @@ import { createMenuItem, updateMenuItem } from "@/services/restaurant-management
 import { IMAGE_CONTENT_TYPES, uploadImage, validateImageFile } from "@/services/image-upload-service";
 import type { ManagedMenuItem, MenuCategory } from "@/types/restaurant";
 
-export const menuInputClass = "w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-zinc-950 placeholder:text-zinc-400 focus:border-orange-500 focus:outline-none";
+export const menuInputClass = "workspace-input";
 
-export function MenuItemForm({ restaurantId, categories, item, token, onChanged }: {
+export function MenuItemForm({ restaurantId, categories, item, token, onChanged, onSaved, onBusy, formId, externalSubmit = false }: {
   restaurantId: number;
   categories: MenuCategory[];
   item?: ManagedMenuItem;
   token: string;
   onChanged: () => Promise<void>;
+  onSaved?: () => void;
+  onBusy?: (busy: boolean) => void;
+  formId?: string;
+  externalSubmit?: boolean;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
@@ -30,6 +34,7 @@ export function MenuItemForm({ restaurantId, categories, item, token, onChanged 
     event.preventDefault();
     if (submitting.current || categories.length === 0) return;
     submitting.current = true;
+    onBusy?.(true);
     const form = event.currentTarget;
     const data = new FormData(form);
     setError("");
@@ -64,18 +69,20 @@ export function MenuItemForm({ restaurantId, categories, item, token, onChanged 
         savedId.current = undefined;
       }
       setFeedback(item ? "Menu item updated successfully." : "Menu item added successfully.");
+      onSaved?.();
     } catch (requestError) {
       const message = requestError instanceof ApiError ? requestError.message : "Unable to save the menu item. Please try again.";
       setError(detailsSaved ? `Menu item details are saved. ${message} Retry to finish without adding a duplicate item.` : message);
     } finally {
       submitting.current = false;
+      onBusy?.(false);
       setStatus("");
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" aria-busy={Boolean(status)}>
-      {!categories.length ? <p className="rounded-xl bg-orange-50 p-3 text-sm text-orange-800">Add a menu category first, then add your dishes below.</p> : null}
+    <form id={formId} onSubmit={handleSubmit} className="space-y-4" aria-busy={Boolean(status)}>
+      {!categories.length ? <p className="rounded-xl bg-brand-soft p-3 text-sm text-orange-800">Add a menu category first, then add your dishes.</p> : null}
       <fieldset disabled={Boolean(status) || !categories.length} className="grid gap-4 sm:grid-cols-2">
         <label className="space-y-2 text-sm font-semibold text-zinc-800">Menu category
           <select name="menuCategoryId" required defaultValue={item?.menuCategoryId ?? ""} className={menuInputClass}>
@@ -93,7 +100,7 @@ export function MenuItemForm({ restaurantId, categories, item, token, onChanged 
           <input name="price" type="number" required min="0.01" step="0.01" defaultValue={item ? Number(item.price) : ""} placeholder="0.00" className={menuInputClass} />
         </label>
         <label className="flex items-center gap-2 text-sm font-semibold text-zinc-800">
-          <input name="isAvailable" type="checkbox" defaultChecked={item?.isAvailable ?? true} className="accent-orange-500" /> Available to order
+          <input name="isAvailable" type="checkbox" defaultChecked={item?.isAvailable ?? true} className="accent-brand" /> Available to order
         </label>
         <label className="space-y-2 text-sm font-semibold text-zinc-800 sm:col-span-2">{item ? "New primary dish photo (optional)" : "Dish photo (optional)"}
           <input name="photo" type="file" accept={IMAGE_CONTENT_TYPES.join(",")} className={menuInputClass} onChange={event => {
@@ -108,7 +115,7 @@ export function MenuItemForm({ restaurantId, categories, item, token, onChanged 
               event.target.value = "";
             }
           }} />
-          <span className="block font-normal text-zinc-500">JPEG, PNG or WebP. The photo uploads when you save this item.</span>
+          <span className="block font-normal text-panel-muted">JPEG, PNG or WebP. The photo uploads when you save this item.</span>
         </label>
         {file && preview ? <div className="space-y-3 sm:col-span-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -117,11 +124,11 @@ export function MenuItemForm({ restaurantId, categories, item, token, onChanged 
             <input name="altText" maxLength={255} placeholder="Describe the dish photo" className={menuInputClass} />
           </label>
         </div> : null}
-        <button className="rounded-xl bg-orange-500 px-5 py-3 font-semibold text-white hover:bg-orange-600 disabled:opacity-60 sm:col-span-2">{status || (item ? "Save item changes" : "Add menu item")}</button>
+        {!externalSubmit ? <button className="rounded-xl bg-brand px-5 py-3 font-semibold text-white hover:bg-brand-hover disabled:opacity-60 sm:col-span-2">{status || (item ? "Save item changes" : "Add menu item")}</button> : null}
       </fieldset>
       {status ? <p role="status" className="text-sm text-zinc-600">{status}</p> : null}
-      {error ? <p role="alert" className="text-sm text-red-700">{error}</p> : null}
-      {feedback ? <p role="status" className="text-sm text-green-700">{feedback}</p> : null}
+      {error ? <p role="alert" className="text-sm text-danger-text">{error}</p> : null}
+      {feedback ? <p role="status" className="text-sm text-success-hover">{feedback}</p> : null}
     </form>
   );
 }

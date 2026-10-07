@@ -1,3 +1,5 @@
+import { clearAuthSession, getAuthToken } from "@/lib/auth-storage";
+
 import type { ApiResponse, ApiSuccessResponse } from "@/types/api";
 
 const API_BASE_URL = (
@@ -38,6 +40,7 @@ export async function apiRequestEnvelope<T>(
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       ...requestOptions,
+      cache: token ? "no-store" : requestOptions.cache ?? "no-store",
       headers: requestHeaders,
     });
   } catch {
@@ -45,6 +48,10 @@ export async function apiRequestEnvelope<T>(
       "Unable to connect to the server. Please try again.",
       0,
     );
+  }
+
+  if (response.status === 401 && token && typeof window !== "undefined" && getAuthToken() === token) {
+    clearAuthSession();
   }
 
   let payload: ApiResponse<T>;

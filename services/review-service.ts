@@ -28,6 +28,7 @@ export function getRestaurantReviews(
 ): Promise<RestaurantReview[]> {
   return apiRequest<RestaurantReview[]>(
     `/restaurants/${restaurantId}/reviews`,
+    { cache: "no-store" },
   );
 }
 
@@ -57,7 +58,7 @@ export function createReview(
 export function getReviewComments(
   reviewId: number,
 ): Promise<ReviewComment[]> {
-  return apiRequest<ReviewComment[]>(`/reviews/${reviewId}/comments`);
+  return apiRequest<ReviewComment[]>(`/reviews/${reviewId}/comments`, { cache: "no-store" });
 }
 
 export function createReviewComment(

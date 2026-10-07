@@ -1,5 +1,7 @@
 "use client";
 
+import { useAuthUser } from "@/hooks/use-auth-user";
+import { PageSkeleton } from "@/components/ui/loading-layouts";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -22,19 +24,9 @@ const roleLabels: Record<UserRole, string> = {
   ADMIN: "Administrator",
 };
 
-function ProfileLoading() {
-  return (
-    <section className="flex flex-1 items-center justify-center bg-orange-50/40 px-4 py-20">
-      <div className="text-center" role="status">
-        <span className="mx-auto block size-12 animate-spin rounded-full border-4 border-orange-100 border-t-orange-500" />
-        <p className="mt-4 font-semibold text-zinc-700">Loading your profile...</p>
-      </div>
-    </section>
-  );
-}
-
 export function ProfileDashboard() {
   const router = useRouter();
+  const authUser = useAuthUser();
   const [profile, setProfile] = useState<AuthUser | null>(null);
   const [status, setStatus] = useState<LoadStatus>("loading");
   const [errorMessage, setErrorMessage] = useState("");
@@ -54,13 +46,13 @@ export function ProfileDashboard() {
       try {
         const user = await getCurrentUser(token);
 
-        if (!isCancelled) {
+        if (!isCancelled && getAuthToken() === token) {
           storeAuthUser(user);
           setProfile(user);
           setStatus("success");
         }
       } catch (error) {
-        if (isCancelled) {
+        if (isCancelled || getAuthToken() !== token) {
           return;
         }
 
@@ -84,7 +76,7 @@ export function ProfileDashboard() {
     return () => {
       isCancelled = true;
     };
-  }, [requestKey, router]);
+  }, [authUser?.id, requestKey, router]);
 
   function retry() {
     setErrorMessage("");
@@ -92,8 +84,8 @@ export function ProfileDashboard() {
     setRequestKey((current) => current + 1);
   }
 
-  if (status === "loading") {
-    return <ProfileLoading />;
+  if (status === "loading" || (profile && profile.id !== authUser?.id)) {
+    return <PageSkeleton variant="profile" />;
   }
 
   if (status === "error" || !profile) {

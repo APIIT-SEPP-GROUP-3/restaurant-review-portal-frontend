@@ -49,7 +49,7 @@ export async function getRestaurants(
   const path = queryString ? `/restaurants?${queryString}` : "/restaurants";
 
   const response =
-    await apiRequestEnvelope<RestaurantSummary[]>(path);
+    await apiRequestEnvelope<RestaurantSummary[]>(path, { cache: "no-store" });
 
   if (!response.pagination) {
     throw new ApiError(
@@ -71,5 +71,7 @@ export function getRestaurantCategories(): Promise<RestaurantCategory[]> {
 export function getRestaurantById(
   restaurantId: number,
 ): Promise<RestaurantDetail> {
-  return apiRequest<RestaurantDetail>(`/restaurants/${restaurantId}`);
+  return apiRequest<RestaurantDetail>(`/restaurants/${restaurantId}`, {
+    cache: "no-store",
+  });
 }

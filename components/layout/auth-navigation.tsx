@@ -1,16 +1,11 @@
 "use client";
 
-import { useMemo, useSyncExternalStore } from "react";
-import Link from "next/link";
+import { NavigationLink } from "@/components/layout/navigation-link";
 import { useRouter } from "next/navigation";
 
-import {
-  clearAuthSession,
-  getAuthSessionSnapshot,
-  getServerAuthSessionSnapshot,
-  parseStoredUser,
-  subscribeToAuthSession,
-} from "@/lib/auth-storage";
+import { clearAuthSession } from "@/lib/auth-storage";
+import { useAuthSession } from "@/hooks/use-auth-user";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface AuthNavigationProps {
   mobile?: boolean;
@@ -23,47 +18,26 @@ export function AuthNavigation({
 }: AuthNavigationProps) {
   const router = useRouter();
 
-  const storedUser = useSyncExternalStore(
-    subscribeToAuthSession,
-    getAuthSessionSnapshot,
-    getServerAuthSessionSnapshot,
-  );
-
-  const user = useMemo(() => parseStoredUser(storedUser), [storedUser]);
+  const { user, ready } = useAuthSession();
 
   function handleLogout() {
     clearAuthSession();
     onNavigate?.();
     router.push("/");
-    router.refresh();
   }
+
+  if (!ready) return <div aria-busy="true" aria-label="Loading account" className="flex gap-3"><Skeleton className="h-9 w-20 rounded-full" /><Skeleton className="h-9 w-24 rounded-full" /></div>;
 
   if (!user) {
     return (
       <div className={mobile ? "grid grid-cols-2 gap-3" : "flex items-center gap-3"}>
-        <Link
-          href="/login"
-          onClick={onNavigate}
-          className={
-            mobile
-              ? "inline-flex items-center justify-center rounded-xl border border-zinc-200 px-4 py-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
-              : "inline-flex rounded-full px-4 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:bg-orange-50"
-          }
-        >
+        <NavigationLink href="/login" mobile={mobile} onNavigate={onNavigate}>
           Log in
-        </Link>
+        </NavigationLink>
 
-        <Link
-          href="/register"
-          onClick={onNavigate}
-          className={
-            mobile
-              ? "inline-flex items-center justify-center rounded-xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white hover:bg-orange-600"
-              : "inline-flex rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
-          }
-        >
+        <NavigationLink href="/register" mobile={mobile} onNavigate={onNavigate}>
           Sign up
-        </Link>
+        </NavigationLink>
       </div>
     );
   }
@@ -76,44 +50,20 @@ export function AuthNavigation({
         </p>
       ) : null}
 
-      <Link
-        href="/profile"
-        onClick={onNavigate}
-        className={
-          mobile
-            ? "rounded-xl px-4 py-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 hover:text-orange-600"
-            : "inline-flex rounded-full px-4 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:bg-orange-50 hover:text-orange-600"
-        }
-      >
+      <NavigationLink href="/profile" mobile={mobile} onNavigate={onNavigate}>
         My profile
-      </Link>
+      </NavigationLink>
 
       {user.role === "RESTAURANT_OWNER" || user.role === "ADMIN" ? (
-        <Link
-          href="/manage/restaurants"
-          onClick={onNavigate}
-          className={
-            mobile
-              ? "rounded-xl px-4 py-3 text-sm font-semibold text-orange-600 hover:bg-orange-50"
-              : "inline-flex rounded-full px-4 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-50"
-          }
-        >
+        <NavigationLink href="/manage/restaurants" mobile={mobile} onNavigate={onNavigate}>
           Manage
-        </Link>
+        </NavigationLink>
       ) : null}
 
       {user.role === "MODERATOR" || user.role === "ADMIN" ? (
-        <Link
-          href="/moderation"
-          onClick={onNavigate}
-          className={
-            mobile
-              ? "rounded-xl px-4 py-3 text-sm font-semibold text-orange-600 hover:bg-orange-50"
-              : "inline-flex rounded-full px-4 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-50"
-          }
-        >
+        <NavigationLink href="/moderation" mobile={mobile} onNavigate={onNavigate}>
           Moderation
-        </Link>
+        </NavigationLink>
       ) : null}
 
       {!mobile ? (

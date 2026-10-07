@@ -50,29 +50,29 @@ export function ImageManager({
   }
 
   return (
-    <section className="rounded-3xl border border-orange-100 bg-white p-6 shadow-sm sm:p-8">
-      <h2 className="text-2xl font-bold text-zinc-950">Restaurant images</h2>
-      <p className="mt-2 text-sm text-zinc-500">
+    <section className="workspace-card p-6 shadow-sm sm:p-8">
+      <h2 className="text-2xl font-bold text-panel-text">Restaurant images</h2>
+      <p className="mt-2 text-sm text-panel-muted">
         Upload photos of your restaurant and choose a primary image.
       </p>
 
-      {error ? <p role="alert" className="mt-4 text-sm text-red-700">{error}</p> : null}
-      {feedback ? <p role="status" className="mt-4 text-sm text-green-700">{feedback}</p> : null}
+      {error ? <p role="alert" className="mt-4 text-sm text-danger-text">{error}</p> : null}
+      {feedback ? <p role="status" className="mt-4 text-sm text-success-hover">{feedback}</p> : null}
 
       {images.length > 0 ? (
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {images.map((image) => (
-            <div key={image.id} className="overflow-hidden rounded-2xl border border-zinc-200">
+            <div key={image.id} className="overflow-hidden rounded-2xl border border-panel-border">
               {/* Images are supplied dynamically by the backend. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={image.imageUrl} alt={image.altText ?? "Restaurant"} className="h-40 w-full object-cover" />
               <div className="flex items-center justify-between gap-3 p-3">
-                <span className="text-xs font-medium text-zinc-500">{image.isPrimary ? "Primary image" : "Gallery image"}</span>
+                <span className="text-xs font-medium text-panel-muted">{image.isPrimary ? "Primary image" : "Gallery image"}</span>
                 <button
                   type="button"
                   disabled={isWorking}
                   onClick={() => void handleDelete(image.id)}
-                  className="text-xs font-semibold text-red-600 disabled:opacity-60"
+                  className="text-xs font-semibold text-danger disabled:opacity-60"
                 >
                   Delete
                 </button>
@@ -81,7 +81,7 @@ export function ImageManager({
           ))}
         </div>
       ) : (
-        <p className="mt-5 text-sm text-zinc-500">No restaurant images added yet.</p>
+        <p className="mt-5 text-sm text-panel-muted">No restaurant images added yet.</p>
       )}
 
       <ImageUploader resource="restaurants" resourceId={restaurantId} token={token} disabled={isWorking} onChanged={onChanged} />

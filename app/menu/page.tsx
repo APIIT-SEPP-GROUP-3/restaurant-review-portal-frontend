@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { MenuFilters } from "@/components/menu/menu-filters";
-import { MenuItemCard } from "@/components/menu/menu-item-card";
+import { DishDiscoveryCard } from "@/components/menu/dish-discovery-card";
 import { MenuPagination } from "@/components/menu/menu-pagination";
 import { ApiError } from "@/lib/api-client";
 import { getPublicMenuItems } from "@/services/menu-service";
@@ -81,15 +81,17 @@ export default async function MenuPage({ searchParams }: MenuPageProps) {
   }
 
   return (
-    <section className="flex-1 bg-gradient-to-b from-orange-50/70 to-white px-4 py-12 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="max-w-3xl">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-orange-600">Menu discovery</p>
-          <h1 className="mt-3 text-4xl font-bold tracking-tight text-zinc-950 sm:text-5xl">Discover your next favourite dish</h1>
-          <p className="mt-4 text-lg leading-8 text-zinc-600">Search menus across restaurants and compare dishes, prices, and availability.</p>
+    <div className="flex-1 bg-brand-soft">
+      <header className="bg-zinc-950 px-4 py-10 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand">Find your craving</p>
+          <h1 className="mt-3 text-4xl font-bold tracking-tight text-white sm:text-5xl">Great dishes. <span className="text-brand">Your next favourite.</span></h1>
+          <p className="mt-4 max-w-2xl text-lg leading-8 text-zinc-200">Explore what’s on the menu. Compare prices, discover dishes, and find where to try them.</p>
         </div>
-
-        <div className="mt-8"><MenuFilters filters={filters} /></div>
+      </header>
+      <section aria-label="Discover menu items" className="px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <MenuFilters filters={filters} />
 
         {errorMessage ? (
           <p role="alert" className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">{errorMessage}</p>
@@ -97,8 +99,8 @@ export default async function MenuPage({ searchParams }: MenuPageProps) {
           <>
             <p className="mt-10 text-sm text-zinc-600"><strong className="text-zinc-950">{pagination.total}</strong> {pagination.total === 1 ? "menu item" : "menu items"} found</p>
             {menuItems.length > 0 ? (
-              <div className="mt-5 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                {menuItems.map((item) => <MenuItemCard key={item.id} item={item} />)}
+              <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                {menuItems.map((item) => <DishDiscoveryCard key={item.id} item={item} />)}
               </div>
             ) : (
               <div className="mt-5 rounded-2xl border border-dashed border-orange-200 bg-white px-6 py-16 text-center">
@@ -110,6 +112,7 @@ export default async function MenuPage({ searchParams }: MenuPageProps) {
           </>
         )}
       </div>
-    </section>
+      </section>
+    </div>
   );
 }
