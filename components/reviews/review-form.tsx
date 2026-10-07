@@ -80,7 +80,7 @@ export function ReviewForm({
       setReviewText("");
       setRatings({});
       setSuccessMessage(
-        "Your review was submitted successfully and is awaiting moderation.",
+        "Thanks for sharing! Your review will appear after a quick check.",
       );
     } catch (error) {
       setErrorMessage(
@@ -95,7 +95,7 @@ export function ReviewForm({
 
   if (!user) {
     return (
-      <section className="rounded-3xl border border-orange-100 bg-white p-6 shadow-sm sm:p-8">
+      <section className="rounded-3xl border border-white/80 bg-white/60 p-6 shadow-sm backdrop-blur sm:p-8">
         <h2 className="text-2xl font-bold text-zinc-950">Write a review</h2>
         <p className="mt-3 text-zinc-600">
           You need to log in with a customer account before sharing a review.
@@ -112,7 +112,7 @@ export function ReviewForm({
 
   if (user.role !== "CUSTOMER") {
     return (
-      <section className="rounded-3xl border border-orange-100 bg-white p-6 shadow-sm sm:p-8">
+      <section className="rounded-3xl border border-white/80 bg-white/60 p-6 shadow-sm backdrop-blur sm:p-8">
         <h2 className="text-2xl font-bold text-zinc-950">Write a review</h2>
         <p className="mt-3 text-zinc-600">
           Reviews can only be submitted from a customer account.
@@ -122,10 +122,10 @@ export function ReviewForm({
   }
 
   return (
-    <section className="rounded-3xl border border-orange-100 bg-white p-6 shadow-sm sm:p-8">
+    <section className="rounded-3xl border border-white/80 bg-white/60 p-6 shadow-sm backdrop-blur sm:p-8">
       <h2 className="text-2xl font-bold text-zinc-950">Write a review</h2>
       <p className="mt-2 text-sm text-zinc-500">
-        Your review will be published after moderation.
+        Tell other diners what you enjoyed and what could be better.
       </p>
 
       <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
@@ -152,7 +152,7 @@ export function ReviewForm({
             minLength={2}
             maxLength={150}
             placeholder="Summarize your experience"
-            className="w-full rounded-xl border border-zinc-300 px-4 py-3 outline-none transition placeholder:text-zinc-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+            className="w-full rounded-xl border border-zinc-300 bg-white/70 px-4 py-3 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
           />
         </div>
 
@@ -169,7 +169,7 @@ export function ReviewForm({
             value={reviewText}
             onChange={(event) => setReviewText(event.target.value)}
             placeholder="Tell the community about the food, service, and atmosphere."
-            className="w-full resize-y rounded-xl border border-zinc-300 px-4 py-3 outline-none transition placeholder:text-zinc-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+            className="w-full resize-y rounded-xl border border-zinc-300 bg-white/70 px-4 py-3 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
           />
         </div>
 

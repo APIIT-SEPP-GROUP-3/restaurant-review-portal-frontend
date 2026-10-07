@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { RestaurantVisit } from "@/components/restaurants/restaurant-visit";
+import { RestaurantGallery } from "@/components/restaurants/restaurant-gallery";
 import { RestaurantMenu } from "@/components/menu/restaurant-menu";
 import { RatingSummary } from "@/components/reviews/rating-summary";
 import { ReviewForm } from "@/components/reviews/review-form";
@@ -175,160 +177,76 @@ export default async function RestaurantDetailPage({
     );
   }
 
-  const primaryImage =
-    restaurant.images.find((image) => image.isPrimary) ??
-    restaurant.images[0];
-
   const [reviewData, menuData] = await Promise.all([
     loadReviewData(restaurant.id),
     loadMenuData(restaurant.id),
   ]);
 
+  const rating = reviewData.ratingSummary.overallAverage;
+  const reviewCount = reviewData.ratingSummary.reviewCount;
+  const directionsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${restaurant.name}, ${restaurant.address}, ${restaurant.city}`)}`;
+
   return (
-    <section className="flex-1 bg-gradient-to-b from-orange-50/70 to-white px-4 py-12 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl">
-          <Link
-            href="/restaurants"
-            className="inline-flex font-semibold text-orange-600 hover:text-orange-700"
-          >
-            ← Back to restaurants
-          </Link>
-
-          <div className="mt-6 overflow-hidden rounded-3xl border border-orange-100 bg-white shadow-lg">
-            <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
-              <div className="min-h-80 bg-gradient-to-br from-orange-100 to-amber-100">
-                {primaryImage ? (
-                  // Images are supplied dynamically by the backend.
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={primaryImage.imageUrl}
-                    alt={
-                      primaryImage.altText ??
-                      `${restaurant.name} restaurant`
-                    }
-                    className="h-full min-h-80 w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex min-h-80 items-center justify-center">
-                    <span className="flex size-24 items-center justify-center rounded-3xl bg-orange-500 text-4xl font-bold text-white">
-                      {restaurant.name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div className="p-7 sm:p-10">
-                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-orange-600">
-                  {restaurant.city}
-                </p>
-
-                <h1 className="mt-3 text-4xl font-bold tracking-tight text-zinc-950">
-                  {restaurant.name}
-                </h1>
-
-                <p className="mt-5 leading-7 text-zinc-600">
-                  {restaurant.description ??
-                    "Restaurant information and dining details."}
-                </p>
-
-                <div className="mt-6 flex flex-wrap gap-2">
-                  {restaurant.categories.map(({ category }) => (
-                    <span
-                      key={category.id}
-                      className="rounded-full bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700"
-                    >
-                      {category.name}
-                    </span>
-                  ))}
-                </div>
-
-                <dl className="mt-8 space-y-4 text-sm">
-                  <div>
-                    <dt className="font-semibold text-zinc-950">Address</dt>
-                    <dd className="mt-1 text-zinc-600">
-                      {restaurant.address}, {restaurant.city}
-                    </dd>
-                  </div>
-
-                  {restaurant.openingHours ? (
-                    <div>
-                      <dt className="font-semibold text-zinc-950">
-                        Opening hours
-                      </dt>
-                      <dd className="mt-1 text-zinc-600">
-                        {restaurant.openingHours}
-                      </dd>
-                    </div>
-                  ) : null}
-
-                  {restaurant.phone ? (
-                    <div>
-                      <dt className="font-semibold text-zinc-950">Phone</dt>
-                      <dd className="mt-1">
-                        <a
-                          href={`tel:${restaurant.phone}`}
-                          className="text-orange-600 hover:text-orange-700"
-                        >
-                          {restaurant.phone}
-                        </a>
-                      </dd>
-                    </div>
-                  ) : null}
-
-                  {restaurant.website ? (
-                    <div>
-                      <dt className="font-semibold text-zinc-950">Website</dt>
-                      <dd className="mt-1">
-                        <a
-                          href={restaurant.website}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-orange-600 hover:text-orange-700"
-                        >
-                          Visit website
-                        </a>
-                      </dd>
-                    </div>
-                  ) : null}
-                </dl>
-
-                <p className="mt-8 text-xs text-zinc-500">
-                  Managed by {restaurant.owner.firstName}{" "}
-                  {restaurant.owner.lastName}
-                </p>
-              </div>
-            </div>
-        </div>
-
-        {menuData.errorMessage ? (
-          <p className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
-            {menuData.errorMessage}
-          </p>
-        ) : (
-          <RestaurantMenu menuItems={menuData.menuItems} />
-        )}
-
-        {reviewData.errorMessage ? (
-          <p className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
-            {reviewData.errorMessage}
-          </p>
-        ) : null}
-
-        <div className="mt-8 grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
-          <div className="space-y-8">
-            <RatingSummary summary={reviewData.ratingSummary} />
-            <ReviewForm
-              restaurantId={restaurant.id}
-              ratingTypes={reviewData.ratingTypes}
-            />
+    <div className="flex-1 bg-[#faf6f2] text-zinc-950">
+        <RestaurantGallery images={restaurant.images} name={restaurant.name}>
+        <header className={`mx-auto flex max-w-6xl flex-col justify-center px-4 pt-8 text-white sm:px-6 sm:pt-12 lg:px-8 ${restaurant.images.length > 1 ? "pb-24" : "pb-8 sm:pb-12"}`}>
+          <div className="max-w-2xl rounded-3xl border border-white/25 bg-zinc-950/40 p-6 shadow-2xl shadow-black/15 backdrop-blur-xl sm:p-9">
+          <Link href="/restaurants" className="mb-4 inline-flex text-xs font-medium text-white/80 hover:text-white">← All restaurants</Link>
+          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
+            <span className="rounded-full border border-white/20 bg-white/15 px-3 py-1.5 text-white">{restaurant.city}</span>
+            {restaurant.categories.map(({ category }) => (
+              <span key={category.id} className="rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-white/90">{category.name}</span>
+            ))}
           </div>
+          <h1 className="mt-4 max-w-2xl text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">{restaurant.name}</h1>
+          <div className="mt-3 flex max-w-xl flex-wrap items-center gap-x-4 gap-y-2 text-sm text-white/80">
+            <a href="#reviews" className="inline-flex items-center gap-2 hover:text-white">
+              <span aria-hidden="true" className="text-lg text-orange-500">★</span>
+              {rating !== null ? <span><strong className="text-white">{rating.toFixed(1)}</strong> / 5 · {reviewCount} {reviewCount === 1 ? "review" : "reviews"}</span> : <span>No ratings yet</span>}
+            </a>
+          </div>
+          <p className="mt-4 max-w-xl whitespace-pre-line text-base leading-7 text-white/80 sm:text-lg">
+            {restaurant.description ?? "Explore the menu and discover your next dining experience."}
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <a href="#menu" className="rounded-full bg-orange-500 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-orange-600">Explore the menu ↓</a>
+            <a href="#write-review" className="rounded-full border border-white/30 bg-white/10 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-white/20">Write a review</a>
+            <a href={directionsUrl} target="_blank" rel="noreferrer" className="rounded-full px-4 py-3.5 text-sm font-semibold text-white/90 hover:bg-white/10">Get directions ↗</a>
+          </div>
+          </div>
+        </header>
+        </RestaurantGallery>
 
-          <ReviewList
-            reviews={reviewData.reviews}
-            commentsByReviewId={reviewData.commentsByReviewId}
-          />
+        <div id="menu" className="scroll-mt-24 bg-[#faf6f2]">
+          <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+          {menuData.errorMessage ? (
+            <section>
+              <h2 className="text-3xl font-bold">Explore the menu</h2>
+              <p role="status" className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">{menuData.errorMessage}</p>
+            </section>
+          ) : <RestaurantMenu menuItems={menuData.menuItems} />}
+          </div>
         </div>
-      </div>
-    </section>
+
+        <section id="visit" aria-labelledby="visit-heading" className="scroll-mt-24 bg-[#f2eae3]">
+          <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+          <RestaurantVisit restaurant={restaurant} directionsUrl={directionsUrl} />
+          </div>
+        </section>
+
+        <section id="reviews" aria-label="Ratings and customer reviews" className="scroll-mt-24 bg-[#faf6f2]">
+          <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+          {reviewData.errorMessage ? <p role="status" className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">{reviewData.errorMessage}</p> : null}
+          <RatingSummary summary={reviewData.ratingSummary} />
+          <ReviewList reviews={reviewData.reviews} commentsByReviewId={reviewData.commentsByReviewId} />
+          </div>
+        </section>
+
+        <div id="write-review" className="scroll-mt-24 bg-[#f2eae3]">
+          <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+          <ReviewForm restaurantId={restaurant.id} ratingTypes={reviewData.ratingTypes} />
+          </div>
+        </div>
+    </div>
   );
 }

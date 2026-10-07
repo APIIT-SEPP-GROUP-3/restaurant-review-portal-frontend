@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 
+import { ImageUploader } from "@/components/management/image-uploader";
 import { ApiError } from "@/lib/api-client";
 import {
-  addRestaurantImage,
   deleteRestaurantImage,
 } from "@/services/restaurant-management-service";
 import type { RestaurantImage } from "@/types/restaurant";
@@ -22,46 +22,12 @@ export function ImageManager({
   token,
   onChanged,
 }: ImageManagerProps) {
-  const [imageUrl, setImageUrl] = useState("");
-  const [altText, setAltText] = useState("");
-  const [isPrimary, setIsPrimary] = useState(false);
   const [isWorking, setIsWorking] = useState(false);
   const [error, setError] = useState("");
   const [feedback, setFeedback] = useState("");
 
-  async function handleAdd(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setIsWorking(true);
-    setError("");
-    setFeedback("");
-    try {
-      await addRestaurantImage(
-        restaurantId,
-        {
-          imageUrl: imageUrl.trim(),
-          altText: altText.trim() || undefined,
-          isPrimary,
-        },
-        token,
-      );
-      setImageUrl("");
-      setAltText("");
-      setIsPrimary(false);
-      await onChanged();
-      setFeedback("Restaurant image added successfully.");
-    } catch (requestError) {
-      setError(
-        requestError instanceof ApiError
-          ? requestError.message
-          : "Unable to add the restaurant image.",
-      );
-    } finally {
-      setIsWorking(false);
-    }
-  }
-
   async function handleDelete(imageId: number) {
-    if (!window.confirm("Delete this restaurant image link?")) {
+    if (!window.confirm("Delete this restaurant image?")) {
       return;
     }
 
@@ -87,7 +53,7 @@ export function ImageManager({
     <section className="rounded-3xl border border-orange-100 bg-white p-6 shadow-sm sm:p-8">
       <h2 className="text-2xl font-bold text-zinc-950">Restaurant images</h2>
       <p className="mt-2 text-sm text-zinc-500">
-        The backend currently stores image URLs rather than uploaded files.
+        Upload photos of your restaurant and choose a primary image.
       </p>
 
       {error ? <p role="alert" className="mt-4 text-sm text-red-700">{error}</p> : null}
@@ -118,30 +84,7 @@ export function ImageManager({
         <p className="mt-5 text-sm text-zinc-500">No restaurant images added yet.</p>
       )}
 
-      <form className="mt-6 grid gap-3 sm:grid-cols-2" onSubmit={handleAdd}>
-        <input
-          type="url"
-          required
-          value={imageUrl}
-          onChange={(event) => setImageUrl(event.target.value)}
-          placeholder="https://example.com/restaurant.jpg"
-          className="rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500 sm:col-span-2"
-        />
-        <input
-          maxLength={255}
-          value={altText}
-          onChange={(event) => setAltText(event.target.value)}
-          placeholder="Alternative text (optional)"
-          className="rounded-xl border border-zinc-300 px-4 py-3 outline-none focus:border-orange-500"
-        />
-        <label className="flex items-center gap-2 rounded-xl border border-zinc-200 px-4 py-3 text-sm font-medium text-zinc-700">
-          <input type="checkbox" checked={isPrimary} onChange={(event) => setIsPrimary(event.target.checked)} className="accent-orange-500" />
-          Set as primary image
-        </label>
-        <button disabled={isWorking} className="rounded-xl bg-orange-500 px-5 py-3 font-semibold text-white hover:bg-orange-600 disabled:opacity-60 sm:col-span-2">
-          {isWorking ? "Saving..." : "Add restaurant image"}
-        </button>
-      </form>
+      <ImageUploader resource="restaurants" resourceId={restaurantId} token={token} disabled={isWorking} onChanged={onChanged} />
     </section>
   );
 }

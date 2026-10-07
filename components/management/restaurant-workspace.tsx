@@ -78,6 +78,7 @@ export function RestaurantWorkspace({
   const [data, setData] = useState<WorkspaceData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [activeSection, setActiveSection] = useState("menu");
 
   const hasManagementRole =
     user?.role === "RESTAURANT_OWNER" || user?.role === "ADMIN";
@@ -167,7 +168,7 @@ export function RestaurantWorkspace({
             {data.restaurant.name}
           </h1>
           <p className="mt-3 text-zinc-600">
-            Manage categories, menu items, availability, and image links.
+            Manage categories, menu items, availability, and images.
           </p>
         </div>
 
@@ -177,7 +178,19 @@ export function RestaurantWorkspace({
           </p>
         ) : null}
 
-        <div className="mt-8 space-y-8">
+        <nav aria-label="Restaurant management sections" className="mt-8 flex flex-wrap gap-2">
+          {[
+            { id: "menu", label: "Menu items & categories" },
+            { id: "images", label: "Restaurant photos" },
+            { id: "categories", label: "Restaurant categories" },
+          ].map(section => (
+            <button key={section.id} type="button" aria-pressed={activeSection === section.id} onClick={() => setActiveSection(section.id)} className={`rounded-full px-5 py-3 text-sm font-semibold ${activeSection === section.id ? "bg-orange-500 text-white" : "border border-orange-200 bg-white text-zinc-700 hover:bg-orange-50"}`}>
+              {section.label}
+            </button>
+          ))}
+        </nav>
+        <div className="mt-6 space-y-8">
+          <div hidden={activeSection !== "categories"}>
           <CategoryManager
             key={`categories-${data.restaurant.updatedAt}-${data.restaurantCategories.length}`}
             restaurantId={restaurantId}
@@ -190,8 +203,9 @@ export function RestaurantWorkspace({
             onChanged={refreshWorkspace}
           />
 
+          </div>
+          <div hidden={activeSection !== "menu"}>
           <MenuManager
-            key={`menu-${data.menuCategories.length}-${data.menuItems.length}`}
             restaurantId={restaurantId}
             menuCategories={data.menuCategories}
             menuItems={data.menuItems}
@@ -199,13 +213,15 @@ export function RestaurantWorkspace({
             onChanged={refreshWorkspace}
           />
 
+          </div>
+          <div hidden={activeSection !== "images"}>
           <ImageManager
-            key={`images-${data.restaurant.images.length}`}
             restaurantId={restaurantId}
             images={data.restaurant.images}
             token={token}
             onChanged={refreshWorkspace}
           />
+          </div>
         </div>
       </div>
     </section>

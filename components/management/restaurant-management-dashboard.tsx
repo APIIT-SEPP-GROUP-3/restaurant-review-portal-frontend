@@ -107,50 +107,27 @@ export function RestaurantManagementDashboard() {
     );
   }
 
-  async function handleCreate(input: CreateRestaurantInput) {
+  async function handleSave(input: CreateRestaurantInput, savedId?: number): Promise<RestaurantRecord> {
     const token = getAuthToken();
     if (!token) {
-      setErrorMessage("Your session has expired. Please log in again.");
-      return;
+      throw new ApiError("Your session has expired. Please log in again.", 401);
     }
-
     setIsSubmitting(true);
     setErrorMessage("");
     setSuccessMessage("");
-
     try {
-      await createRestaurant(input, token);
-      await reloadRestaurants();
-      setShowCreateForm(false);
-      setSuccessMessage("Restaurant created successfully.");
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error));
+      const id = selectedRestaurant?.id ?? savedId;
+      return id ? await updateRestaurant(id, input, token) : await createRestaurant(input, token);
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  async function handleUpdate(input: CreateRestaurantInput) {
-    const token = getAuthToken();
-    if (!token || !selectedRestaurant) {
-      setErrorMessage("Your session has expired. Please log in again.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    setErrorMessage("");
-    setSuccessMessage("");
-
-    try {
-      await updateRestaurant(selectedRestaurant.id, input, token);
-      await reloadRestaurants();
-      setSelectedRestaurant(null);
-      setSuccessMessage("Restaurant updated successfully.");
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error));
-    } finally {
-      setIsSubmitting(false);
-    }
+  async function handleSaved() {
+    await reloadRestaurants();
+    setShowCreateForm(false);
+    setSelectedRestaurant(null);
+    setSuccessMessage(selectedRestaurant ? "Restaurant updated successfully." : "Restaurant created successfully.");
   }
 
   if (!user) {
@@ -224,7 +201,10 @@ export function RestaurantManagementDashboard() {
                 key={selectedRestaurant?.id ?? "new"}
                 restaurant={selectedRestaurant ?? undefined}
                 isSubmitting={isSubmitting}
-                onSubmit={selectedRestaurant ? handleUpdate : handleCreate}
+                onSubmit={handleSave}
+                token={getAuthToken() ?? ""}
+                onSaved={handleSaved}
+                images={restaurants.find((item) => item.id === selectedRestaurant?.id)?.images ?? []}
                 onCancel={() => {
                   setShowCreateForm(false);
                   setSelectedRestaurant(null);
@@ -268,7 +248,7 @@ export function RestaurantManagementDashboard() {
                     href={`/manage/restaurants/${restaurant.id}`}
                     className="rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
                   >
-                    Manage menu
+                    Manage menu & images
                   </Link>
                   <button
                     type="button"

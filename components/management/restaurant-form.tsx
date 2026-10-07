@@ -1,16 +1,23 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+
+import { ApiError } from "@/lib/api-client";
+import { IMAGE_CONTENT_TYPES, uploadImage, validateImageFile } from "@/services/image-upload-service";
 
 import type {
   CreateRestaurantInput,
   RestaurantRecord,
+  RestaurantImage,
 } from "@/types/restaurant";
 
 interface RestaurantFormProps {
   restaurant?: RestaurantRecord;
+  images?: RestaurantImage[];
   isSubmitting: boolean;
-  onSubmit: (input: CreateRestaurantInput) => Promise<void>;
+  onSubmit: (input: CreateRestaurantInput, savedId?: number) => Promise<RestaurantRecord>;
+  token: string;
+  onSaved: () => Promise<void>;
   onCancel?: () => void;
 }
 
@@ -21,9 +28,12 @@ function optionalValue(value: string): string | undefined {
 
 export function RestaurantForm({
   restaurant,
+  images = [],
   isSubmitting,
   onSubmit,
   onCancel,
+  token,
+  onSaved,
 }: RestaurantFormProps) {
   const [name, setName] = useState(restaurant?.name ?? "");
   const [description, setDescription] = useState(
@@ -38,26 +48,62 @@ export function RestaurantForm({
     restaurant?.openingHours ?? "",
   );
 
+  const [image, setImage] = useState<File | null>(null);
+  const [preview, setPreview] = useState("");
+  const [altText, setAltText] = useState("");
+  const [error, setError] = useState("");
+  const [status, setStatus] = useState("");
+  const savedId = useRef<number | undefined>(restaurant?.id);
+  const submitting = useRef(false);
+  const busy = isSubmitting || Boolean(status);
+
+  useEffect(() => {
+    if (preview) return () => URL.revokeObjectURL(preview);
+  }, [preview]);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    await onSubmit({
-      name: name.trim(),
-      description: optionalValue(description),
-      address: address.trim(),
-      city: city.trim(),
-      phone: optionalValue(phone),
-      email: optionalValue(email),
-      website: optionalValue(website),
-      openingHours: optionalValue(openingHours),
-    });
+    if (submitting.current || busy) return;
+    submitting.current = true;
+    setError("");
+    setStatus("Saving restaurant...");
+    try {
+      const saved = await onSubmit({
+        name: name.trim(),
+        description: optionalValue(description),
+        address: address.trim(),
+        city: city.trim(),
+        phone: optionalValue(phone),
+        email: optionalValue(email),
+        website: optionalValue(website),
+        openingHours: optionalValue(openingHours),
+      }, savedId.current);
+      savedId.current = saved.id;
+      if (image) {
+        await uploadImage("restaurants", saved.id, image, {
+          altText: optionalValue(altText),
+          isPrimary: true,
+        }, token, setStatus);
+        setImage(null);
+        setPreview("");
+      }
+      await onSaved();
+    } catch (requestError) {
+      const message = requestError instanceof ApiError ? requestError.message : "Unable to save your changes. Please try again.";
+      setError(savedId.current ? `Restaurant details are saved. ${message} You can retry without creating another restaurant.` : message);
+    } finally {
+      submitting.current = false;
+      setStatus("");
+    }
   }
 
   const inputClassName =
     "w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-100";
 
   return (
-    <form className="space-y-5" onSubmit={handleSubmit}>
+    <form className="space-y-5" onSubmit={handleSubmit} aria-busy={busy}>
+      <fieldset disabled={busy} className="space-y-5">
       <div className="grid gap-5 sm:grid-cols-2">
         <label className="sm:col-span-2">
           <span className="mb-2 block text-sm font-semibold text-zinc-800">
@@ -172,14 +218,57 @@ export function RestaurantForm({
         </label>
       </div>
 
+      <div className="space-y-3 rounded-2xl border border-orange-100 bg-orange-50/40 p-4">
+        {restaurant && images.length > 0 ? (
+          <div className="flex flex-wrap gap-3">
+            {images.map((existingImage) => (
+              <div key={existingImage.id}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={existingImage.imageUrl} alt={existingImage.altText ?? restaurant.name} className="h-24 w-32 rounded-xl object-cover" />
+                <p className="mt-1 text-xs text-zinc-500">{existingImage.isPrimary ? "Current primary image" : "Gallery image"}</p>
+              </div>
+            ))}
+          </div>
+        ) : null}
+        <label className="block text-sm font-semibold text-zinc-800">
+          {restaurant ? "Upload a new primary image" : "Restaurant image (optional)"}
+          <input type="file" accept={IMAGE_CONTENT_TYPES.join(",")} className={`${inputClassName} mt-2`} onChange={(event) => {
+            setImage(null);
+            setPreview("");
+            setError("");
+            const file = event.target.files?.[0];
+            if (!file) return;
+            try {
+              validateImageFile(file);
+              setImage(file);
+              setPreview(URL.createObjectURL(file));
+            } catch (validationError) {
+              setError(validationError instanceof Error ? validationError.message : "Choose a supported image.");
+              event.target.value = "";
+            }
+          }} />
+        </label>
+        <p className="text-xs text-zinc-500">Choose a JPEG, PNG or WebP photo. It will be uploaded when you save.</p>
+        {image && preview ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={preview} alt="Selected restaurant image preview" className="h-40 max-w-full rounded-xl object-contain" />
+            <label className="block text-sm font-semibold text-zinc-800">
+              Alternative text (optional)
+              <input value={altText} onChange={(event) => setAltText(event.target.value)} maxLength={255} className={`${inputClassName} mt-2`} placeholder="Describe the photo" />
+            </label>
+          </>
+        ) : null}
+      </div>
+
       <div className="flex flex-wrap gap-3">
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={busy}
           className="rounded-full bg-orange-500 px-6 py-3 font-semibold text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isSubmitting
-            ? "Saving..."
+          {busy
+            ? status || "Saving..."
             : restaurant
               ? "Save changes"
               : "Create restaurant"}
@@ -195,6 +284,9 @@ export function RestaurantForm({
           </button>
         ) : null}
       </div>
+      </fieldset>
+      {error ? <p role="alert" className="text-sm text-red-700">{error}</p> : null}
+      {status ? <p role="status" className="text-sm text-zinc-600">{status}</p> : null}
     </form>
   );
 }

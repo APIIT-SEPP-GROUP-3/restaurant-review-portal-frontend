@@ -116,7 +116,7 @@ export function ReviewComments({ reviewId, comments }: ReviewCommentsProps) {
       setCommentText("");
       setReplyingTo(null);
       setSuccessMessage(
-        "Your comment was submitted successfully and is awaiting moderation.",
+        "Thanks! Your comment will appear after a quick check.",
       );
     } catch (error) {
       setErrorMessage(
@@ -130,10 +130,10 @@ export function ReviewComments({ reviewId, comments }: ReviewCommentsProps) {
   }
 
   return (
-    <div className="mt-6 border-t border-zinc-100 pt-5">
-      <h4 className="text-sm font-bold text-zinc-900">
-        Comments ({comments.length})
-      </h4>
+    <details className="mt-5 border-t border-slate-200/70 pt-4">
+      <summary className="w-fit cursor-pointer text-sm font-semibold text-zinc-600 hover:text-orange-600">
+        {comments.length ? `Conversation (${comments.length})` : "Start a conversation"}
+      </summary>
 
       {comments.length > 0 ? (
         <div className="mt-3 space-y-3">
@@ -171,7 +171,7 @@ export function ReviewComments({ reviewId, comments }: ReviewCommentsProps) {
           ))}
         </div>
       ) : (
-        <p className="mt-2 text-sm text-zinc-500">No approved comments yet.</p>
+        null
       )}
 
       {!user ? (
@@ -223,7 +223,7 @@ export function ReviewComments({ reviewId, comments }: ReviewCommentsProps) {
             value={commentText}
             onChange={(event) => setCommentText(event.target.value)}
             placeholder={replyingTo ? "Write your reply" : "Add a comment"}
-            className="w-full resize-y rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-zinc-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+            className="w-full resize-y rounded-xl border border-zinc-300 bg-white/70 px-4 py-3 text-sm text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
           />
           <button
             type="submit"
@@ -242,6 +242,6 @@ export function ReviewComments({ reviewId, comments }: ReviewCommentsProps) {
           Your account role cannot add comments.
         </p>
       )}
-    </div>
+    </details>
   );
 }
