@@ -307,10 +307,10 @@ export function ModerationDashboard() {
             <>
               <div className="workspace-card mt-5 overflow-hidden">
                 <div className="flex items-center justify-between border-b border-panel-border px-5 py-4"><h3 className="text-sm font-semibold">{status.charAt(0) + status.slice(1).toLowerCase()} submissions</h3><span className="text-xs text-panel-muted">{visibleItems.length} matching · {items.length} total</span></div>
-                {visibleItems.length ? <WorkspaceTable label="Moderation submissions" header={<tr><th className="px-5 py-3 font-medium">Submission</th><th className="px-4 py-3 font-medium">Author</th><th className="hidden px-4 py-3 font-medium md:table-cell">Received</th><th className="sticky right-0 bg-panel-subtle px-4 py-3 text-right font-medium">Actions</th></tr>}>{pageItems.map(item => {
+                {visibleItems.length ? <WorkspaceTable onRowClick={id => openSubmission(id, "view")} label="Moderation submissions" header={<tr><th className="px-5 py-3 font-medium">Submission</th><th className="px-4 py-3 font-medium">Author</th><th className="hidden px-4 py-3 font-medium md:table-cell">Received</th><th className="sticky right-0 bg-panel-subtle px-4 py-3 text-right font-medium">Actions</th></tr>}>{pageItems.map(item => {
                     const restaurant = "restaurant" in item ? item.restaurant : item.review.restaurant;
                     const title = "reviewText" in item ? item.title ?? "Dining experience" : item.commentText;
-                    return <tr key={item.id} aria-selected={selected?.id === item.id}>
+                    return <tr key={item.id} data-record-id={item.id} aria-selected={selected?.id === item.id}>
                       <td className="h-18 max-w-xs px-5 py-3"><button type="button" disabled={actionId !== null} aria-pressed={selected?.id === item.id} onClick={() => openSubmission(item.id, "view")} className="w-full text-left"><span className="block truncate font-semibold">{title}</span><span className="mt-1 block text-xs text-panel-muted">{restaurant.name} · #{item.id}</span></button></td>
                       <td className="px-4 py-4"><span className="block max-w-40 truncate">{item.user.firstName} {item.user.lastName}</span>{item.user.role ? <span className="mt-1 block text-xs capitalize text-zinc-400">{item.user.role.roleName.toLowerCase().replaceAll("_", " ")}</span> : null}</td>
                       <td className="hidden whitespace-nowrap px-4 py-4 text-xs text-panel-muted md:table-cell">{formatDate(item.createdAt)}</td>

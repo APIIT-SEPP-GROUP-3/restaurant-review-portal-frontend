@@ -151,7 +151,7 @@ export function RestaurantWorkspace({
 
   return (
     <WorkspaceShell label="Restaurant workspace content" sidebar={
-      <WorkspaceSidebar title="Restaurant management" identity={data.restaurant.name} navigation={
+      <WorkspaceSidebar title="Manage restaurant" backLink={{ href: "/manage/restaurants", label: "Back to restaurants" }} navigation={
         <WorkspaceNavigation label="Restaurant management sections" active={activeSection} onSelect={setActiveSection} items={[
           { id: "menu", label: "Menu items & categories" },
           { id: "feedback", label: "Customer feedback" },
@@ -159,12 +159,10 @@ export function RestaurantWorkspace({
           { id: "categories", label: "Restaurant categories" },
         ]} />
       }>
-        <Link href="/manage/restaurants" className="block text-sm text-white/60 hover:text-white">← All restaurants</Link>
         {user.role === "ADMIN" ? <Link href="/moderation" className="block text-sm text-white/60 hover:text-white">Content moderation ↗</Link> : null}
       </WorkspaceSidebar>
     }>
-      <Link href="/manage/restaurants" className="mb-4 inline-flex text-sm font-semibold text-brand-hover lg:hidden">← All restaurants</Link>
-      <WorkspaceHeader breadcrumb="Management / Restaurant" title={data.restaurant.name} description="Manage categories, menu items, availability, images, and customer feedback." actions={<Link href={`/restaurants/${restaurantId}`} className="workspace-button">View public page ↗</Link>} />
+      <WorkspaceHeader title={data.restaurant.name} actions={<Link href={`/restaurants/${restaurantId}`} className="workspace-button">View public page ↗</Link>} />
         {loadError ? (
           <p role="alert" className="mt-6 rounded-xl border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger-text">
             {loadError}

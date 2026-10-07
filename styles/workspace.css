@@ -1,6 +1,6 @@
 /* Both staff areas own their viewport; customer pages keep their normal flow. */
 body:has(.staff-workspace) { height: 100dvh; overflow: hidden; }
-body:has(.staff-workspace) > header { flex-shrink: 0; }
+body:has(.staff-workspace) > header { flex-shrink: 0; background: var(--panel-surface); border-color: var(--panel-border); }
 body:has(.staff-workspace) > header > div { max-width: none; }
 body:has(.staff-workspace) > main { min-height: 0; overflow: hidden; }
 body:has(.staff-workspace) > footer { display: none; }
@@ -57,3 +57,7 @@ body:has(.staff-workspace) > footer { display: none; }
 
 .workspace-input-compact { padding: .5rem .75rem; }
 .workspace-input::file-selector-button { border-radius: var(--radius-control); }
+
+.workspace-back-link { display: flex; align-items: center; gap: .75rem; margin-top: 1rem; padding: .625rem 1rem; border: 1px solid var(--panel-sidebar-muted); border-radius: var(--radius-control); color: white; background: var(--panel-sidebar-hover); font-size: .875rem; font-weight: 600; }
+.workspace-back-link:hover { border-color: var(--brand); background: var(--brand); }
+.workspace-table[data-clickable-rows="true"] tbody tr[data-record-id] { cursor: pointer; }

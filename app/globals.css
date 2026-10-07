@@ -14,3 +14,15 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Use hand cursors only for interactive controls; text fields keep their caret. */
+a[href], button:not(:disabled), summary, select:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+input:is([type="checkbox"], [type="radio"], [type="file"], [type="range"]):not(:disabled),
+label:has(input:is([type="checkbox"], [type="radio"]):not(:disabled)) {
+  cursor: pointer;
+}
+button:disabled, select:disabled, input:disabled, [aria-disabled="true"] {
+  cursor: not-allowed;
+}
+input::file-selector-button { cursor: pointer; }

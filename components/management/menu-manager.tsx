@@ -102,10 +102,10 @@ export function MenuManager({ restaurantId, menuCategories, menuItems, token, on
     <div className="workspace-card mt-4 overflow-hidden">
       <div className="flex justify-between gap-3 border-b border-panel-border px-5 py-4"><h3 className="text-sm font-semibold">{tab === "items" ? "Menu items" : "Menu categories"}</h3><span className="text-xs text-panel-muted">{total} matching</span></div>
       {!total ? <p className="p-8 text-center text-sm text-panel-muted">{search ? "No matches. Try another search." : tab === "items" ? "No menu items match this filter." : "No menu categories added yet."}</p> : tab === "items" ?
-        <WorkspaceTable label="Menu items" header={<tr><th>Item</th><th className="hidden md:table-cell">Category</th><th>Price</th><th>Availability</th><th>Actions</th></tr>}>
+        <WorkspaceTable onRowClick={id => open({ mode: "view", id })} label="Menu items" header={<tr><th>Item</th><th className="hidden md:table-cell">Category</th><th>Price</th><th>Availability</th><th>Actions</th></tr>}>
           {pageItems.map(item => {
             const image = item.images.find(image => image.isPrimary) ?? item.images[0];
-            return <tr key={item.id}>
+            return <tr key={item.id} data-record-id={item.id}>
               <td className="h-18 max-w-xs px-5 py-3"><div className="flex items-center gap-3">
                 {image ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -124,8 +124,8 @@ export function MenuManager({ restaurantId, menuCategories, menuItems, token, on
               </div></td>
             </tr>;
           })}
-        </WorkspaceTable> : <WorkspaceTable label="Menu categories" header={<tr><th>Category</th><th>Display order</th><th>Items</th><th>Actions</th></tr>}>
-          {pageCategories.map(category => <tr key={category.id}><td className="h-18 px-5 py-3 font-semibold">{category.name}</td><td className="px-4 py-3">{category.displayOrder}</td><td className="px-4 py-3">{menuItems.filter(item => item.menuCategoryId === category.id).length}</td><td className="px-3 py-3 text-right"><button type="button" onClick={() => open({ mode: "edit-category", id: category.id })} className="workspace-button">Edit category</button></td></tr>)}
+        </WorkspaceTable> : <WorkspaceTable onRowClick={id => open({ mode: "edit-category", id })} label="Menu categories" header={<tr><th>Category</th><th>Display order</th><th>Items</th><th>Actions</th></tr>}>
+          {pageCategories.map(category => <tr key={category.id} data-record-id={category.id}><td className="h-18 px-5 py-3 font-semibold">{category.name}</td><td className="px-4 py-3">{category.displayOrder}</td><td className="px-4 py-3">{menuItems.filter(item => item.menuCategoryId === category.id).length}</td><td className="px-3 py-3 text-right"><button type="button" onClick={() => open({ mode: "edit-category", id: category.id })} className="workspace-button">Edit category</button></td></tr>)}
         </WorkspaceTable>}
       <Pagination label="Menu pagination" page={currentPage} total={total} onPageChange={setPage} />
     </div>

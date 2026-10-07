@@ -49,8 +49,8 @@ export function CustomerFeedback({ restaurantId }: { restaurantId: number }) {
     <div className="workspace-card mt-4 overflow-hidden">
       <div className="flex justify-between gap-3 border-b border-panel-border px-5 py-4"><h3 className="text-sm font-semibold">Customer reviews</h3><span className="text-xs text-panel-muted">{filtered.length} matching</span></div>
       {loading ? <p role="status" className="p-8 text-center text-sm text-panel-muted">Loading feedback...</p> : error ? <p className="p-8 text-center text-sm text-panel-muted">Feedback could not be loaded.</p> : !filtered.length ? <p className="p-8 text-center text-sm text-panel-muted">{search ? "No matching reviews. Try another search." : "No customer reviews yet."}</p> :
-        <WorkspaceTable label="Customer feedback" header={<tr><th>Review</th><th>Customer</th><th>Rating</th><th className="hidden md:table-cell">Received</th><th>Actions</th></tr>}>
-          {pageReviews.map(review => <tr key={review.id}>
+        <WorkspaceTable onRowClick={id => setSelected({ id, reply: false })} label="Customer feedback" header={<tr><th>Review</th><th>Customer</th><th>Rating</th><th className="hidden md:table-cell">Received</th><th>Actions</th></tr>}>
+          {pageReviews.map(review => <tr key={review.id} data-record-id={review.id}>
             <td className="h-18 max-w-xs px-5 py-3"><button type="button" onClick={() => setSelected({ id: review.id, reply: false })} className="w-full text-left"><span className="block truncate font-semibold">{review.title || "Dining experience"}</span><span className="mt-1 block truncate text-xs text-panel-muted">{review.menuItem?.name ?? `Review #${review.id}`}</span></button></td>
             <td className="px-4 py-3"><span className="block max-w-40 truncate">{review.user.firstName} {review.user.lastName}</span></td>
             <td className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-brand-hover">{formatRating(review.overallRating)}</td>
