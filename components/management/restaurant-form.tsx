@@ -18,6 +18,7 @@ interface RestaurantFormProps {
   onSubmit: (input: CreateRestaurantInput, savedId?: number) => Promise<RestaurantRecord>;
   token: string;
   onSaved: () => Promise<void>;
+  onBusy?: (busy: boolean) => void;
   onCancel?: () => void;
 }
 
@@ -32,6 +33,7 @@ export function RestaurantForm({
   isSubmitting,
   onSubmit,
   onCancel,
+  onBusy,
   token,
   onSaved,
 }: RestaurantFormProps) {
@@ -66,6 +68,7 @@ export function RestaurantForm({
 
     if (submitting.current || busy) return;
     submitting.current = true;
+    onBusy?.(true);
     setError("");
     setStatus("Saving restaurant...");
     try {
@@ -94,12 +97,13 @@ export function RestaurantForm({
       setError(savedId.current ? `Restaurant details are saved. ${message} You can retry without creating another restaurant.` : message);
     } finally {
       submitting.current = false;
+      onBusy?.(false);
       setStatus("");
     }
   }
 
   const inputClassName =
-    "w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-100";
+    "workspace-input";
 
   return (
     <form className="space-y-5" onSubmit={handleSubmit} aria-busy={busy}>
@@ -122,7 +126,7 @@ export function RestaurantForm({
 
         <label className="sm:col-span-2">
           <span className="mb-2 block text-sm font-semibold text-zinc-800">
-            Description <span className="font-normal text-zinc-500">(optional)</span>
+            Description <span className="font-normal text-panel-muted">(optional)</span>
           </span>
           <textarea
             rows={4}
@@ -166,7 +170,7 @@ export function RestaurantForm({
 
         <label>
           <span className="mb-2 block text-sm font-semibold text-zinc-800">
-            Phone <span className="font-normal text-zinc-500">(optional)</span>
+            Phone <span className="font-normal text-panel-muted">(optional)</span>
           </span>
           <input
             type="tel"
@@ -180,7 +184,7 @@ export function RestaurantForm({
 
         <label>
           <span className="mb-2 block text-sm font-semibold text-zinc-800">
-            Email <span className="font-normal text-zinc-500">(optional)</span>
+            Email <span className="font-normal text-panel-muted">(optional)</span>
           </span>
           <input
             type="email"
@@ -193,7 +197,7 @@ export function RestaurantForm({
 
         <label>
           <span className="mb-2 block text-sm font-semibold text-zinc-800">
-            Website <span className="font-normal text-zinc-500">(optional)</span>
+            Website <span className="font-normal text-panel-muted">(optional)</span>
           </span>
           <input
             type="url"
@@ -206,7 +210,7 @@ export function RestaurantForm({
 
         <label className="sm:col-span-2">
           <span className="mb-2 block text-sm font-semibold text-zinc-800">
-            Opening hours <span className="font-normal text-zinc-500">(optional)</span>
+            Opening hours <span className="font-normal text-panel-muted">(optional)</span>
           </span>
           <input
             maxLength={500}
@@ -218,14 +222,14 @@ export function RestaurantForm({
         </label>
       </div>
 
-      <div className="space-y-3 rounded-2xl border border-orange-100 bg-orange-50/40 p-4">
+      <div className="space-y-3 rounded-2xl border border-panel-border bg-brand-soft/40 p-4">
         {restaurant && images.length > 0 ? (
           <div className="flex flex-wrap gap-3">
             {images.map((existingImage) => (
               <div key={existingImage.id}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={existingImage.imageUrl} alt={existingImage.altText ?? restaurant.name} className="h-24 w-32 rounded-xl object-cover" />
-                <p className="mt-1 text-xs text-zinc-500">{existingImage.isPrimary ? "Current primary image" : "Gallery image"}</p>
+                <p className="mt-1 text-xs text-panel-muted">{existingImage.isPrimary ? "Current primary image" : "Gallery image"}</p>
               </div>
             ))}
           </div>
@@ -248,7 +252,7 @@ export function RestaurantForm({
             }
           }} />
         </label>
-        <p className="text-xs text-zinc-500">Choose a JPEG, PNG or WebP photo. It will be uploaded when you save.</p>
+        <p className="text-xs text-panel-muted">Choose a JPEG, PNG or WebP photo. It will be uploaded when you save.</p>
         {image && preview ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -265,7 +269,7 @@ export function RestaurantForm({
         <button
           type="submit"
           disabled={busy}
-          className="rounded-full bg-orange-500 px-6 py-3 font-semibold text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-full bg-brand px-6 py-3 font-semibold text-white hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy
             ? status || "Saving..."
@@ -285,7 +289,7 @@ export function RestaurantForm({
         ) : null}
       </div>
       </fieldset>
-      {error ? <p role="alert" className="text-sm text-red-700">{error}</p> : null}
+      {error ? <p role="alert" className="text-sm text-danger-text">{error}</p> : null}
       {status ? <p role="status" className="text-sm text-zinc-600">{status}</p> : null}
     </form>
   );

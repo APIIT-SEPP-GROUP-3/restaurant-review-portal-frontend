@@ -83,12 +83,12 @@ export function ApproveAndReply({ type, id, reviewId, disabled = false, formId, 
     }
   }
 
-  return <form id={formId} onSubmit={submit} className="mt-5 space-y-3 rounded-2xl border border-orange-200 bg-orange-50/60 p-4" aria-busy={Boolean(stage)}>
+  return <form id={formId} onSubmit={submit} className="mt-5 space-y-3 rounded-2xl border border-panel-border bg-brand-soft/60 p-4" aria-busy={Boolean(stage)}>
     <label htmlFor={`approval-reply-${type}-${id}`} className="block text-sm font-semibold text-zinc-900">Approve with a response</label>
-    <p className="text-xs leading-5 text-zinc-500">Approves the submission, then saves and publishes your response.</p>
-    <textarea id={`approval-reply-${type}-${id}`} required minLength={2} maxLength={2000} rows={3} value={text} disabled={disabled || Boolean(stage) || replySaved} onChange={event => setText(event.target.value)} placeholder="Write your response to the customer" className="w-full rounded-xl border border-orange-200 bg-white p-3 text-sm text-zinc-950 outline-none focus:border-orange-500" />
-    {error ? <p role="alert" className="text-sm text-red-700">{error}</p> : null}
-    {!externalSubmit ? <button disabled={disabled || Boolean(stage)} className="rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-50">{stage || (originalApproved ? "Retry response" : "Approve and reply")}</button> : null}
+    <p className="text-xs leading-5 text-panel-muted">Approves the submission, then saves and publishes your response.</p>
+    <textarea id={`approval-reply-${type}-${id}`} required minLength={2} maxLength={2000} rows={3} value={text} disabled={disabled || Boolean(stage) || replySaved} onChange={event => setText(event.target.value)} placeholder="Write your response to the customer" className="w-full rounded-xl border border-panel-border bg-panel-surface p-3 text-sm text-panel-text outline-none focus:border-brand" />
+    {error ? <p role="alert" className="text-sm text-danger-text">{error}</p> : null}
+    {!externalSubmit ? <button disabled={disabled || Boolean(stage)} className="rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-hover disabled:opacity-50">{stage || (originalApproved ? "Retry response" : "Approve and reply")}</button> : null}
     {stage ? <p role="status" className="text-sm text-zinc-600">{stage}</p> : null}
   </form>;
 }

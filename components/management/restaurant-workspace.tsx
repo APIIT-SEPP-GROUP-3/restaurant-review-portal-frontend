@@ -1,20 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+
+import { WorkspaceMessage } from "@/components/workspace/workspace-message";
+import { WorkspaceNavigation } from "@/components/workspace/workspace-navigation";
+import { WorkspaceShell, WorkspaceSidebar, WorkspaceHeader } from "@/components/workspace/workspace-shell";
 
 import { CustomerFeedback } from "@/components/management/customer-feedback";
 import { CategoryManager } from "@/components/management/category-manager";
 import { ImageManager } from "@/components/management/image-manager";
 import { MenuManager } from "@/components/management/menu-manager";
 import { ApiError } from "@/lib/api-client";
-import {
-  getAuthSessionSnapshot,
-  getAuthToken,
-  getServerAuthSessionSnapshot,
-  parseStoredUser,
-  subscribeToAuthSession,
-} from "@/lib/auth-storage";
+import { getAuthToken } from "@/lib/auth-storage";
+import { useAuthUser } from "@/hooks/use-auth-user";
 import {
   getMenuCategories,
   getMenuItems,
@@ -69,12 +68,8 @@ function errorMessage(error: unknown): string {
 export function RestaurantWorkspace({
   restaurantId,
 }: RestaurantWorkspaceProps) {
-  const storedUser = useSyncExternalStore(
-    subscribeToAuthSession,
-    getAuthSessionSnapshot,
-    getServerAuthSessionSnapshot,
-  );
-  const user = useMemo(() => parseStoredUser(storedUser), [storedUser]);
+  const user = useAuthUser();
+
 
   const [data, setData] = useState<WorkspaceData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -123,74 +118,59 @@ export function RestaurantWorkspace({
   }
 
   if (!user) {
-    return <WorkspaceMessage title="Login required" message="Log in with an owner or administrator account to manage this restaurant." />;
+    return <WorkspaceMessage href="/manage/restaurants" action="Return to management" title="Login required" message="Log in with an owner or administrator account to manage this restaurant." />;
   }
 
   if (!hasManagementRole) {
-    return <WorkspaceMessage title="Access restricted" message="Your account role cannot manage restaurants." />;
+    return <WorkspaceMessage href="/manage/restaurants" action="Return to management" title="Access restricted" message="Your account role cannot manage restaurants." />;
   }
 
   if (!Number.isInteger(restaurantId) || restaurantId <= 0) {
-    return <WorkspaceMessage title="Invalid restaurant" message="The restaurant ID in this link is invalid." />;
+    return <WorkspaceMessage href="/manage/restaurants" action="Return to management" title="Invalid restaurant" message="The restaurant ID in this link is invalid." />;
   }
 
   if (isLoading) {
-    return <WorkspaceMessage title="Loading restaurant" message="Preparing the management workspace..." />;
+    return <WorkspaceMessage href="/manage/restaurants" action="Return to management" title="Loading restaurant" message="Preparing the management workspace..." />;
   }
 
   if (!data) {
-    return <WorkspaceMessage title="Restaurant unavailable" message={loadError || "The restaurant could not be loaded."} />;
+    return <WorkspaceMessage href="/manage/restaurants" action="Return to management" title="Restaurant unavailable" message={loadError || "The restaurant could not be loaded."} />;
   }
 
   const canManage =
     user.role === "ADMIN" || data.restaurant.ownerId === user.id;
 
   if (!canManage) {
-    return <WorkspaceMessage title="Access restricted" message="You can only manage restaurants that belong to your account." />;
+    return <WorkspaceMessage href="/manage/restaurants" action="Return to management" title="Access restricted" message="You can only manage restaurants that belong to your account." />;
   }
 
   const token = getAuthToken();
   if (!token) {
-    return <WorkspaceMessage title="Session expired" message="Please log in again to continue." />;
+    return <WorkspaceMessage href="/manage/restaurants" action="Return to management" title="Session expired" message="Please log in again to continue." />;
   }
 
   return (
-    <section className="flex-1 bg-gradient-to-b from-orange-50/70 to-white px-4 py-12 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl">
-        <Link href="/manage/restaurants" className="font-semibold text-orange-600 hover:text-orange-700">
-          ← Back to restaurant management
-        </Link>
-
-        <div className="mt-6">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-orange-600">
-            Management workspace
-          </p>
-          <h1 className="mt-2 text-4xl font-bold tracking-tight text-zinc-950 sm:text-5xl">
-            {data.restaurant.name}
-          </h1>
-          <p className="mt-3 text-zinc-600">
-            Manage categories, menu items, availability, and images.
-          </p>
-        </div>
-
+    <WorkspaceShell label="Restaurant workspace content" sidebar={
+      <WorkspaceSidebar title="Restaurant management" identity={data.restaurant.name} navigation={
+        <WorkspaceNavigation label="Restaurant management sections" active={activeSection} onSelect={setActiveSection} items={[
+          { id: "menu", label: "Menu items & categories" },
+          { id: "feedback", label: "Customer feedback" },
+          { id: "images", label: "Restaurant photos" },
+          { id: "categories", label: "Restaurant categories" },
+        ]} />
+      }>
+        <Link href="/manage/restaurants" className="block text-sm text-white/60 hover:text-white">← All restaurants</Link>
+        {user.role === "ADMIN" ? <Link href="/moderation" className="block text-sm text-white/60 hover:text-white">Content moderation ↗</Link> : null}
+      </WorkspaceSidebar>
+    }>
+      <Link href="/manage/restaurants" className="mb-4 inline-flex text-sm font-semibold text-brand-hover lg:hidden">← All restaurants</Link>
+      <WorkspaceHeader breadcrumb="Management / Restaurant" title={data.restaurant.name} description="Manage categories, menu items, availability, images, and customer feedback." actions={<Link href={`/restaurants/${restaurantId}`} className="workspace-button">View public page ↗</Link>} />
         {loadError ? (
-          <p role="alert" className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <p role="alert" className="mt-6 rounded-xl border border-danger-border bg-danger-soft px-4 py-3 text-sm text-danger-text">
             {loadError}
           </p>
         ) : null}
 
-        <nav aria-label="Restaurant management sections" className="mt-8 flex flex-wrap gap-2">
-          {[
-            { id: "menu", label: "Menu items & categories" },
-            { id: "feedback", label: "Customer feedback" },
-            { id: "images", label: "Restaurant photos" },
-            { id: "categories", label: "Restaurant categories" },
-          ].map(section => (
-            <button key={section.id} type="button" aria-pressed={activeSection === section.id} onClick={() => setActiveSection(section.id)} className={`rounded-full px-5 py-3 text-sm font-semibold ${activeSection === section.id ? "bg-orange-500 text-white" : "border border-orange-200 bg-white text-zinc-700 hover:bg-orange-50"}`}>
-              {section.label}
-            </button>
-          ))}
-        </nav>
         <div className="mt-6 space-y-8">
           {activeSection === "feedback" ? <CustomerFeedback key={restaurantId} restaurantId={restaurantId} /> : null}
           <div hidden={activeSection !== "categories"}>
@@ -226,27 +206,6 @@ export function RestaurantWorkspace({
           />
           </div>
         </div>
-      </div>
-    </section>
-  );
-}
-
-function WorkspaceMessage({
-  title,
-  message,
-}: {
-  title: string;
-  message: string;
-}) {
-  return (
-    <section className="flex flex-1 items-center justify-center bg-orange-50/60 px-4 py-16">
-      <div className="max-w-lg rounded-3xl border border-orange-100 bg-white p-8 text-center shadow-sm">
-        <h1 className="text-3xl font-bold text-zinc-950">{title}</h1>
-        <p className="mt-3 text-zinc-600">{message}</p>
-        <Link href="/manage/restaurants" className="mt-6 inline-flex font-semibold text-orange-600">
-          Return to management
-        </Link>
-      </div>
-    </section>
+    </WorkspaceShell>
   );
 }
