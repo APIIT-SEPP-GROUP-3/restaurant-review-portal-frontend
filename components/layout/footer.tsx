@@ -47,7 +47,7 @@ export function Footer() {
               Menu
             </Link>
             <Link
-              href="/#about"
+              href="/about"
               className="transition-colors hover:text-orange-400"
             >
               About

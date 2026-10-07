@@ -11,8 +11,8 @@ body:has(.staff-workspace) > footer { display: none; }
 .workspace-card { border: 1px solid var(--panel-border); border-radius: var(--radius-card); background: var(--panel-surface); }
 .workspace-button { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; padding: .625rem 1rem; font-size: .875rem; font-weight: 600; background: var(--panel-surface); border: 1px solid var(--panel-border); color: var(--panel-text); }
 .workspace-button:hover { background: var(--panel-subtle); }
-.workspace-button-primary { background: var(--brand); border-color: var(--brand); color: white; }
-.workspace-button-primary:hover { background: var(--brand-hover); border-color: var(--brand-hover); }
+.workspace-button-primary { background: var(--brand-action); border-color: var(--brand-action); color: white; }
+.workspace-button-primary:hover { background: var(--brand-action-hover); border-color: var(--brand-action-hover); }
 .workspace-button:disabled { opacity: .5; cursor: not-allowed; }
 .workspace-tabs { display: flex; gap: .25rem; padding: .25rem; border: 1px solid var(--panel-border); border-radius: var(--radius-control); background: var(--panel-surface); }
 .workspace-tab { padding: .5rem .75rem; font-size: .875rem; font-weight: 600; color: var(--panel-muted); }

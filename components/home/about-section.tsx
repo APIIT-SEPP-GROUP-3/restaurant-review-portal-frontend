@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const steps = [
   {
     number: "01",
@@ -32,6 +34,8 @@ export function AboutSection() {
             structured ratings, honest reviews, and moderated conversations.
           </p>
         </div>
+
+        <Link href="/about" className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/20 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10">Get to know DineRate <span aria-hidden="true">→</span></Link>
 
         <div className="mt-12 grid gap-6 md:grid-cols-3">
           {steps.map((step) => (

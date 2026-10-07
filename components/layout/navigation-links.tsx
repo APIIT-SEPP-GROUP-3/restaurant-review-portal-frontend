@@ -6,7 +6,7 @@ export const navigationLinks = [
   { label: "Home", href: "/" },
   { label: "Restaurants", href: "/restaurants" },
   { label: "Menu", href: "/menu" },
-  { label: "About", href: "/#about" },
+  { label: "About", href: "/about" },
 ];
 
 export function NavigationLinks({ mobile = false, onNavigate }: { mobile?: boolean; onNavigate?: () => void }) {

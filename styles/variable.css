@@ -1,16 +1,20 @@
 /* Shared application tokens. Workspace surfaces deliberately use the light palette. */
 :root {
+  color-scheme: light;
   --background: #ffffff;
   --foreground: #171717;
   --brand: #ff6900;
   --brand-hover: #f54900;
+  --brand-ink: #a63d00;
+  --brand-action: var(--brand);
+  --brand-action-hover: var(--brand-hover);
   --brand-soft: #fff7ed;
   --panel-background: #f1f2f4;
   --panel-surface: #ffffff;
   --panel-subtle: #fafaf9;
   --panel-border: #e7e5e4;
   --panel-text: #09090b;
-  --panel-muted: #71717a;
+  --panel-muted: #52525b;
   --panel-sidebar-muted: #ffffffb3;
   --panel-sidebar-hover: #ffffff1a;
   --panel-sidebar: #0c0a09;
@@ -36,6 +40,8 @@
 
 @theme inline {
   --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-action: var(--brand-action);
   --color-brand-hover: var(--brand-hover);
   --color-brand-soft: var(--brand-soft);
   --color-panel-border: var(--panel-border);
@@ -53,11 +59,4 @@
   --color-danger-soft: var(--status-danger-soft);
   --color-danger-border: var(--status-danger-border);
   --color-danger-text: var(--status-danger-text);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
