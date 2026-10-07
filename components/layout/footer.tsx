@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -11,9 +12,7 @@ export function Footer() {
             href="/"
             className="inline-flex items-center gap-2 text-xl font-bold text-white"
           >
-            <span className="flex size-9 items-center justify-center rounded-xl bg-orange-500">
-              D
-            </span>
+            <Image src="/dinerate-logo.png" alt="" width={44} height={44} className="size-11 shrink-0 object-contain" />
             <span>
               Dine<span className="text-orange-500">Rate</span>
             </span>
