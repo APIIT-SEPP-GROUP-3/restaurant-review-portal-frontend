@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 
+import { CustomerFeedback } from "@/components/management/customer-feedback";
 import { CategoryManager } from "@/components/management/category-manager";
 import { ImageManager } from "@/components/management/image-manager";
 import { MenuManager } from "@/components/management/menu-manager";
@@ -181,6 +182,7 @@ export function RestaurantWorkspace({
         <nav aria-label="Restaurant management sections" className="mt-8 flex flex-wrap gap-2">
           {[
             { id: "menu", label: "Menu items & categories" },
+            { id: "feedback", label: "Customer feedback" },
             { id: "images", label: "Restaurant photos" },
             { id: "categories", label: "Restaurant categories" },
           ].map(section => (
@@ -190,6 +192,7 @@ export function RestaurantWorkspace({
           ))}
         </nav>
         <div className="mt-6 space-y-8">
+          {activeSection === "feedback" ? <CustomerFeedback key={restaurantId} restaurantId={restaurantId} /> : null}
           <div hidden={activeSection !== "categories"}>
           <CategoryManager
             key={`categories-${data.restaurant.updatedAt}-${data.restaurantCategories.length}`}

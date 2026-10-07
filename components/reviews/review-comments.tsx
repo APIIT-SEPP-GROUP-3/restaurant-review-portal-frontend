@@ -21,6 +21,8 @@ import type {
 interface ReviewCommentsProps {
   reviewId: number;
   comments: ReviewComment[];
+  initiallyOpen?: boolean;
+  readOnly?: boolean;
 }
 
 interface CommentAuthorLabelProps {
@@ -71,7 +73,7 @@ function CommentReply({ reply }: { reply: ReviewCommentReply }) {
   );
 }
 
-export function ReviewComments({ reviewId, comments }: ReviewCommentsProps) {
+export function ReviewComments({ reviewId, comments, initiallyOpen = false, readOnly = false }: ReviewCommentsProps) {
   const storedUser = useSyncExternalStore(
     subscribeToAuthSession,
     getAuthSessionSnapshot,
@@ -85,10 +87,11 @@ export function ReviewComments({ reviewId, comments }: ReviewCommentsProps) {
   const [successMessage, setSuccessMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const canComment =
+  const canComment = !readOnly && (
     user?.role === "CUSTOMER" ||
     user?.role === "RESTAURANT_OWNER" ||
-    user?.role === "ADMIN";
+    user?.role === "ADMIN"
+  );
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -130,7 +133,7 @@ export function ReviewComments({ reviewId, comments }: ReviewCommentsProps) {
   }
 
   return (
-    <details className="mt-5 border-t border-slate-200/70 pt-4">
+    <details open={initiallyOpen} className="mt-5 border-t border-slate-200/70 pt-4">
       <summary className="w-fit cursor-pointer text-sm font-semibold text-zinc-600 hover:text-orange-600">
         {comments.length ? `Conversation (${comments.length})` : "Start a conversation"}
       </summary>
@@ -174,7 +177,7 @@ export function ReviewComments({ reviewId, comments }: ReviewCommentsProps) {
         null
       )}
 
-      {!user ? (
+      {readOnly ? null : !user ? (
         <p className="mt-4 text-sm text-zinc-600">
           <Link href="/login" className="font-semibold text-orange-600">
             Log in

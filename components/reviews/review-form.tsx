@@ -129,20 +129,11 @@ export function ReviewForm({
       </p>
 
       <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
-        {errorMessage ? (
-          <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {errorMessage}
-          </div>
-        ) : null}
-
-        {successMessage ? (
-          <div role="status" className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-            {successMessage}
-          </div>
-        ) : null}
-
         <div>
-          <label htmlFor="review-title" className="mb-2 block text-sm font-semibold text-zinc-800">
+          <label
+            htmlFor="review-title"
+            className="mb-2 block text-sm font-semibold text-zinc-800"
+          >
             Title <span className="font-normal text-zinc-500">(optional)</span>
           </label>
           <input
@@ -157,7 +148,10 @@ export function ReviewForm({
         </div>
 
         <div>
-          <label htmlFor="review-text" className="mb-2 block text-sm font-semibold text-zinc-800">
+          <label
+            htmlFor="review-text"
+            className="mb-2 block text-sm font-semibold text-zinc-800"
+          >
             Your review
           </label>
           <textarea
@@ -210,6 +204,24 @@ export function ReviewForm({
             Rating types are not available yet. Please try again later.
           </p>
         )}
+
+        {errorMessage ? (
+          <div
+            role="alert"
+            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          >
+            {errorMessage}
+          </div>
+        ) : null}
+
+        {successMessage ? (
+          <div
+            role="status"
+            className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700"
+          >
+            {successMessage}
+          </div>
+        ) : null}
 
         <button
           type="submit"
