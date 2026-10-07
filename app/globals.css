@@ -5,6 +5,7 @@
 @import "../styles/loading.css";
 @import "../styles/navigation.css";
 @import "../styles/discovery-search.css";
+@import "../styles/startup-loader.css";
 
 @theme inline {
   --color-background: var(--background);
