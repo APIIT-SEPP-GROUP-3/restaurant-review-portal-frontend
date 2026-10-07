@@ -1,15 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import {
-  getAuthSessionSnapshot,
-  getServerAuthSessionSnapshot,
-  parseStoredUser,
-  subscribeToAuthSession,
-} from "@/lib/auth-storage";
+import { useAuthSession } from "@/hooks/use-auth-user";
+import { PageSkeleton, WorkspaceSkeleton } from "@/components/ui/loading-layouts";
 import type { UserRole } from "@/types/auth";
 
 interface RouteGuardProps {
@@ -24,30 +20,17 @@ export function RouteGuard({
   children,
 }: RouteGuardProps) {
   const router = useRouter();
-  const storedUser = useSyncExternalStore(
-    subscribeToAuthSession,
-    getAuthSessionSnapshot,
-    getServerAuthSessionSnapshot,
-  );
-  const user = useMemo(() => parseStoredUser(storedUser), [storedUser]);
+  const { user, ready } = useAuthSession();
 
   useEffect(() => {
-    if (!user) {
+    if (ready && !user) {
       router.replace(`/login?next=${encodeURIComponent(returnPath)}`);
     }
-  }, [returnPath, router, user]);
+  }, [ready, returnPath, router, user]);
 
-  if (!user) {
-    return (
-      <section className="flex flex-1 items-center justify-center bg-orange-50/40 px-4 py-20">
-        <div className="text-center" role="status">
-          <span className="mx-auto block size-12 animate-spin rounded-full border-4 border-orange-100 border-t-orange-500" />
-          <p className="mt-4 font-semibold text-zinc-700">
-            Checking your account access...
-          </p>
-        </div>
-      </section>
-    );
+  if (!ready || !user) {
+    return returnPath.startsWith("/manage") || returnPath === "/moderation" ?
+      <WorkspaceSkeleton title={returnPath === "/moderation" ? "Content moderation" : "Restaurant management"} /> : <PageSkeleton variant="profile" />;
   }
 
   if (!allowedRoles.includes(user.role)) {

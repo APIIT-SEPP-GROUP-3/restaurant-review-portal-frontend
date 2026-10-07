@@ -1,5 +1,6 @@
 "use client";
 
+import { WorkspaceSkeleton } from "@/components/ui/loading-layouts";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -130,7 +131,7 @@ export function RestaurantWorkspace({
   }
 
   if (isLoading) {
-    return <WorkspaceMessage href="/manage/restaurants" action="Return to management" title="Loading restaurant" message="Preparing the management workspace..." />;
+    return <WorkspaceSkeleton />;
   }
 
   if (!data) {

@@ -1,16 +1,11 @@
 "use client";
 
-import { useMemo, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import {
-  clearAuthSession,
-  getAuthSessionSnapshot,
-  getServerAuthSessionSnapshot,
-  parseStoredUser,
-  subscribeToAuthSession,
-} from "@/lib/auth-storage";
+import { clearAuthSession } from "@/lib/auth-storage";
+import { useAuthSession } from "@/hooks/use-auth-user";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface AuthNavigationProps {
   mobile?: boolean;
@@ -23,20 +18,15 @@ export function AuthNavigation({
 }: AuthNavigationProps) {
   const router = useRouter();
 
-  const storedUser = useSyncExternalStore(
-    subscribeToAuthSession,
-    getAuthSessionSnapshot,
-    getServerAuthSessionSnapshot,
-  );
-
-  const user = useMemo(() => parseStoredUser(storedUser), [storedUser]);
+  const { user, ready } = useAuthSession();
 
   function handleLogout() {
     clearAuthSession();
     onNavigate?.();
     router.push("/");
-    router.refresh();
   }
+
+  if (!ready) return <div aria-busy="true" aria-label="Loading account" className="flex gap-3"><Skeleton className="h-9 w-20 rounded-full" /><Skeleton className="h-9 w-24 rounded-full" /></div>;
 
   if (!user) {
     return (

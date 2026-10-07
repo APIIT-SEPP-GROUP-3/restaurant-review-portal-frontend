@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import { ApiError } from "@/lib/api-client";
@@ -8,6 +8,7 @@ import { registerUser } from "@/services/auth-service";
 
 export function RegisterForm() {
   const router = useRouter();
+  const submitting = useRef(false);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -19,6 +20,7 @@ export function RegisterForm() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting.current) return;
     setErrorMessage("");
 
     if (password !== confirmPassword) {
@@ -26,6 +28,7 @@ export function RegisterForm() {
       return;
     }
 
+    submitting.current = true;
     setIsSubmitting(true);
 
     try {
@@ -43,13 +46,14 @@ export function RegisterForm() {
           ? error.message
           : "Unable to create your account. Please try again.",
       );
-    } finally {
+      submitting.current = false;
       setIsSubmitting(false);
     }
   }
 
   return (
-    <form className="space-y-5" onSubmit={handleSubmit}>
+    <form className="space-y-5" onSubmit={handleSubmit} aria-busy={isSubmitting}>
+      <fieldset disabled={isSubmitting} className="space-y-5">
       {errorMessage ? (
         <div
           role="alert"
@@ -179,6 +183,7 @@ export function RegisterForm() {
       >
         {isSubmitting ? "Creating account..." : "Create account"}
       </button>
+      </fieldset>
     </form>
   );
 }

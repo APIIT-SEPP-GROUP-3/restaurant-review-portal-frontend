@@ -1,5 +1,6 @@
 "use client";
 
+import { ConversationSkeleton } from "@/components/ui/loading-layouts";
 import { useEffect, useState } from "react";
 import { ReviewComments } from "@/components/reviews/review-comments";
 import { getReviewComments } from "@/services/review-service";
@@ -15,6 +16,6 @@ export function ReviewConversation({ reviewId, readOnly = false, onBusy, focusCo
     return () => { active = false; };
   }, [reviewId]);
   if (error) return <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>;
-  if (!comments) return <p role="status" className="mt-4 text-sm text-zinc-500">Loading conversation...</p>;
+  if (!comments) return <ConversationSkeleton />;
   return <ReviewComments reviewId={reviewId} comments={comments} readOnly={readOnly} onBusy={onBusy} focusComposer={focusComposer} initiallyOpen />;
 }

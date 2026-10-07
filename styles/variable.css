@@ -24,6 +24,8 @@
   --status-danger-soft: #fef2f2;
   --status-danger-border: #fecaca;
   --status-danger-text: #b91c1c;
+  --skeleton-base: #e5e7eb;
+  --skeleton-highlight: #ffffffb3;
   --radius-input: .75rem;
   --radius-control: 9999px;
   --radius-card: 1rem;

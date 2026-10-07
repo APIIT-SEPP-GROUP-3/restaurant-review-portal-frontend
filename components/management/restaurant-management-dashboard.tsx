@@ -1,5 +1,6 @@
 "use client";
 
+import { TableSkeleton } from "@/components/ui/loading-layouts";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -187,7 +188,7 @@ export function RestaurantManagementDashboard() {
       {successMessage ? <WorkspaceToast message={successMessage} onDismiss={() => setSuccessMessage("")} /> : null}
       <div className="workspace-card mt-5 overflow-hidden">
         <div className="flex justify-between border-b border-panel-border px-5 py-4"><h3 className="text-sm font-semibold">Restaurant profiles</h3><span className="text-xs text-panel-muted">{filtered.length} matching · {restaurants.length} total</span></div>
-        {isLoading ? <p role="status" className="p-8 text-center text-sm text-panel-muted">Loading restaurants...</p> : !filtered.length ? <div className="p-8 text-center"><h3 className="font-semibold">{search ? "No matching restaurants" : "No restaurants to manage"}</h3><p className="mt-2 text-sm text-panel-muted">{search ? "Try another search." : "Add a restaurant to start managing its menu and photos."}</p></div> : <WorkspaceTable label="Restaurants" header={<tr><th className="px-5 py-3 font-medium">Restaurant</th><th className="px-4 py-3 font-medium">City</th><th className="hidden px-4 py-3 font-medium md:table-cell">Address</th><th className="sticky right-0 bg-panel-subtle px-4 py-3 text-right font-medium">Actions</th></tr>}>{pageItems.map(restaurant => <tr key={restaurant.id}>
+        {isLoading ? <TableSkeleton label="Loading restaurants" /> : !filtered.length ? <div className="p-8 text-center"><h3 className="font-semibold">{search ? "No matching restaurants" : "No restaurants to manage"}</h3><p className="mt-2 text-sm text-panel-muted">{search ? "Try another search." : "Add a restaurant to start managing its menu and photos."}</p></div> : <WorkspaceTable label="Restaurants" header={<tr><th className="px-5 py-3 font-medium">Restaurant</th><th className="px-4 py-3 font-medium">City</th><th className="hidden px-4 py-3 font-medium md:table-cell">Address</th><th className="sticky right-0 bg-panel-subtle px-4 py-3 text-right font-medium">Actions</th></tr>}>{pageItems.map(restaurant => <tr key={restaurant.id}>
             <td className="h-18 max-w-xs px-5 py-3"><Link href={`/manage/restaurants/${restaurant.id}`} className="block truncate font-semibold hover:text-brand-hover">{restaurant.name}</Link><span className="mt-1 block text-xs text-panel-muted">#{restaurant.id}</span></td>
             <td className="px-4 py-3">{restaurant.city}</td><td className="hidden max-w-xs truncate px-4 py-3 text-panel-muted md:table-cell">{restaurant.address}</td>
             <td className="px-3 py-3"><div className="flex flex-wrap justify-end gap-2">

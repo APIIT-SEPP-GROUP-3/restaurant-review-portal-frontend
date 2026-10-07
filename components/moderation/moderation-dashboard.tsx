@@ -1,5 +1,6 @@
 "use client";
 
+import { TableSkeleton } from "@/components/ui/loading-layouts";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
@@ -303,7 +304,7 @@ export function ModerationDashboard() {
           {errorMessage && !modalMode ? <p role="alert" className="mt-4 rounded-xl bg-danger-soft p-4 text-sm text-danger-text">{errorMessage}</p> : null}
           {successMessage && (!modalMode || isLoading) ? <WorkspaceToast message={successMessage} onDismiss={() => setSuccessMessage("")} action={publishedTarget ? <button type="button" disabled={actionId !== null} onClick={() => showApproved(publishedTarget.type, publishedTarget.id)} className="shrink-0 px-3 py-2 text-xs font-semibold text-brand-hover hover:bg-brand-soft">View approved</button> : null} /> : null}
 
-          {isLoading ? <p role="status" className="mt-6 rounded-2xl bg-panel-surface p-8 text-center text-sm text-panel-muted">Loading submissions...</p> : (
+          {isLoading ? <div className="workspace-card mt-6"><TableSkeleton label="Loading submissions" /></div> : (
             <>
               <div className="workspace-card mt-5 overflow-hidden">
                 <div className="flex items-center justify-between border-b border-panel-border px-5 py-4"><h3 className="text-sm font-semibold">{status.charAt(0) + status.slice(1).toLowerCase()} submissions</h3><span className="text-xs text-panel-muted">{visibleItems.length} matching · {items.length} total</span></div>

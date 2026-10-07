@@ -1,3 +1,5 @@
+import { Skeleton } from "@/components/ui/skeleton";
+
 export const WORKSPACE_PAGE_SIZE = 10;
 
 export function Pagination({ page, total, onPageChange, loading = false, label = "Records pagination" }: {
@@ -8,7 +10,7 @@ export function Pagination({ page, total, onPageChange, loading = false, label =
   const pages = Array.from({ length: count }, (_, index) => index + 1)
     .filter(number => number === 1 || number === count || Math.abs(number - current) <= 2);
   return <nav aria-label={label} className="workspace-pagination">
-    <p className="text-xs text-panel-muted">{loading ? "Loading..." : total ? `Showing ${(current - 1) * WORKSPACE_PAGE_SIZE + 1}–${Math.min(current * WORKSPACE_PAGE_SIZE, total)} of ${total}` : "No records"} · {WORKSPACE_PAGE_SIZE} per page</p>
+    {loading ? <Skeleton className="h-4 w-40" /> : <p className="text-xs text-panel-muted">{total ? `Showing ${(current - 1) * WORKSPACE_PAGE_SIZE + 1}–${Math.min(current * WORKSPACE_PAGE_SIZE, total)} of ${total}` : "No records"} · {WORKSPACE_PAGE_SIZE} per page</p>}
     <div className="flex items-center gap-1">
       <button type="button" disabled={loading || current === 1} onClick={() => onPageChange(current - 1)} className="px-3 py-2 text-sm font-semibold disabled:opacity-40">Previous</button>
       {pages.map((number, index) => <span key={number} className="flex items-center">

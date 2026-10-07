@@ -1,14 +1,17 @@
 "use client";
 
 import { useMemo, useSyncExternalStore } from "react";
-import {
-  getAuthSessionSnapshot,
-  getServerAuthSessionSnapshot,
-  parseStoredUser,
-  subscribeToAuthSession,
-} from "@/lib/auth-storage";
+import { getAuthSessionSnapshot, getServerAuthSessionSnapshot, parseStoredUser, subscribeToAuthSession } from "@/lib/auth-storage";
 
-export function useAuthUser() {
+const subscribeToHydration = () => () => {};
+const clientReady = () => true;
+const serverReady = () => false;
+
+export function useAuthSession() {
+  const ready = useSyncExternalStore(subscribeToHydration, clientReady, serverReady);
   const session = useSyncExternalStore(subscribeToAuthSession, getAuthSessionSnapshot, getServerAuthSessionSnapshot);
-  return useMemo(() => parseStoredUser(session), [session]);
+  const user = useMemo(() => parseStoredUser(session), [session]);
+  return { user, ready };
 }
+
+export function useAuthUser() { return useAuthSession().user; }
