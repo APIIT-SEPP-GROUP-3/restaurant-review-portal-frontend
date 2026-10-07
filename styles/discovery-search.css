@@ -1,0 +1,31 @@
+/* A shared search surface, with compact sorting controls outside the main bar. */
+.discovery-search-bar { display: flex; align-items: flex-end; gap: .75rem; padding: 1rem; border: 1px solid var(--panel-border); border-radius: var(--radius-dialog); background: var(--panel-surface); box-shadow: 0 8px 24px #17171708; }
+.discovery-search-field { display: flex; flex: 1; flex-direction: column; gap: .5rem; min-width: 0; }
+.discovery-search-field-wide { flex: 2; }
+.discovery-search-field > span { padding-left: 1rem; font-size: .75rem; line-height: 1rem; font-weight: 700; color: var(--panel-text); }
+.discovery-search-field :is(input, select) { width: 100%; height: 3rem; min-height: 3rem; padding: .75rem 1rem; border: 1px solid var(--panel-border); border-radius: var(--radius-control); background-color: var(--panel-subtle); font-size: .875rem; line-height: 1.5rem; color: var(--panel-text); transition: border-color .15s, background-color .15s; }
+.discovery-search-field select { padding-right: 2.75rem; background-position: right 1rem center; }
+.discovery-search-field :is(input, select):hover { border-color: var(--panel-muted); }
+.discovery-search-field input::placeholder { color: var(--panel-muted); opacity: 1; }
+.discovery-search-field :is(input, select):focus-visible { border-color: var(--brand); background-color: var(--brand-soft); outline: 2px solid var(--brand); outline-offset: 2px; }
+.discovery-search-submit { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; flex-shrink: 0; height: 3rem; padding: .75rem 1.5rem; border-radius: var(--radius-control); background: var(--brand); color: white; font-size: .875rem; font-weight: 700; transition: background .15s; }
+.discovery-search-submit:hover { background: var(--brand-hover); }
+.discovery-search-submit:focus-visible, .discovery-search-reset:focus-visible { outline: 2px solid var(--brand-ink); outline-offset: 3px; }
+.discovery-search-options { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; margin-top: .75rem; padding: 0 .25rem; }
+.discovery-search-sorting { display: flex; flex-wrap: wrap; gap: .75rem; }
+.discovery-search-sort { display: flex; align-items: center; gap: .5rem; padding: .125rem .75rem; border: 1px solid var(--panel-border); border-radius: var(--radius-control); background: var(--panel-surface); font-size: .75rem; }
+.discovery-search-sort > span { white-space: nowrap; color: var(--panel-muted); }
+.discovery-search-sort select { width: auto; min-height: 2.25rem; padding: .375rem 1.75rem .375rem .25rem; border: 0; border-radius: var(--radius-control); background-color: transparent; background-position: right .125rem center; color: var(--panel-text); font-size: .875rem; font-weight: 600; }
+.discovery-search-sort:focus-within { border-color: var(--brand); outline: 2px solid var(--brand); outline-offset: 2px; }
+.discovery-search-sort select:focus-visible { outline: none; }
+.discovery-search-reset { border-radius: var(--radius-control); padding: .5rem; font-size: .875rem; font-weight: 600; color: var(--brand-ink); }
+.discovery-search-reset:hover { text-decoration: underline; }
+@media (max-width: 767px) {
+  .discovery-search-bar { flex-wrap: wrap; gap: .875rem .75rem; }
+  .discovery-search-field { flex-basis: calc(50% - .5rem); }
+  .discovery-search-field-wide { flex-basis: 100%; }
+  .discovery-search-submit { width: 100%; min-height: 3rem; }
+  .discovery-search-options { padding: 0; }
+}
+@media (max-width: 479px) { .discovery-search-field { flex-basis: 100%; } }
+@media (prefers-reduced-motion: reduce) { .discovery-search-field :is(input, select), .discovery-search-submit { transition: none; } }
