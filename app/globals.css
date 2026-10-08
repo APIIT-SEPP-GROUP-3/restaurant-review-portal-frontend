@@ -1,9 +1,11 @@
 @import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@import "../styles/variable.css";
+@import "../styles/workspace.css";
+@import "../styles/forms.css";
+@import "../styles/loading.css";
+@import "../styles/navigation.css";
+@import "../styles/discovery-search.css";
+@import "../styles/startup-loader.css";
 
 @theme inline {
   --color-background: var(--background);
@@ -12,15 +14,20 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Use hand cursors only for interactive controls; text fields keep their caret. */
+a[href], button:not(:disabled), summary, select:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+input:is([type="checkbox"], [type="radio"], [type="file"], [type="range"]):not(:disabled),
+label:has(input:is([type="checkbox"], [type="radio"]):not(:disabled)) {
+  cursor: pointer;
+}
+button:disabled, select:disabled, input:disabled, [aria-disabled="true"] {
+  cursor: not-allowed;
+}
+input::file-selector-button { cursor: pointer; }

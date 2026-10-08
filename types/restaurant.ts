@@ -1,0 +1,166 @@
+import type { Pagination } from "@/types/api";
+
+export type RestaurantStatus = "ACTIVE" | "INACTIVE";
+export type RestaurantSortField = "name" | "city" | "createdAt";
+export type SortOrder = "asc" | "desc";
+
+export interface RestaurantCategory {
+  id: number;
+  name: string;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RestaurantCategoryMapping {
+  restaurantId: number;
+  categoryId: number;
+  createdAt: string;
+  category: RestaurantCategory;
+}
+
+export interface RestaurantImage {
+  id: number;
+  restaurantId: number;
+  imageUrl: string;
+  objectKey: string | null;
+  altText: string | null;
+  isPrimary: boolean;
+  createdAt: string;
+}
+
+export interface RestaurantRecord {
+  id: number;
+  ownerId: number;
+  name: string;
+  description: string | null;
+  address: string;
+  city: string;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  openingHours: string | null;
+  status: RestaurantStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RestaurantSummary extends RestaurantRecord {
+  categories: RestaurantCategoryMapping[];
+  images: RestaurantImage[];
+}
+
+export interface RestaurantWithCategories extends RestaurantRecord {
+  categories: RestaurantCategoryMapping[];
+}
+
+export interface RestaurantSearchParams {
+  search?: string;
+  city?: string;
+  categoryId?: number;
+  page?: number;
+  limit?: number;
+  sortBy?: RestaurantSortField;
+  sortOrder?: SortOrder;
+}
+
+export interface RestaurantSearchResult {
+  restaurants: RestaurantSummary[];
+  pagination: Pagination;
+}
+
+export interface RestaurantOwner {
+  id: number;
+  firstName: string;
+  lastName: string;
+}
+
+export interface MenuCategory {
+  id: number;
+  restaurantId: number;
+  name: string;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MenuItem {
+  id: number;
+  restaurantId: number;
+  menuCategoryId: number;
+  name: string;
+  description: string | null;
+  price: string | number;
+  isAvailable: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MenuItemImage {
+  id: number;
+  menuItemId: number;
+  imageUrl: string;
+  objectKey: string | null;
+  altText: string | null;
+  isPrimary: boolean;
+  createdAt: string;
+}
+
+export interface ManagedMenuItem extends MenuItem {
+  menuCategory: MenuCategory;
+  images: MenuItemImage[];
+}
+
+export interface CreateRestaurantInput {
+  name: string;
+  description?: string;
+  address: string;
+  city: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  openingHours?: string;
+}
+
+export type UpdateRestaurantInput = Partial<CreateRestaurantInput>;
+
+export interface CreateRestaurantCategoryInput {
+  name: string;
+  description?: string;
+}
+
+export interface CreateMenuCategoryInput {
+  name: string;
+  displayOrder?: number;
+}
+
+export type UpdateMenuCategoryInput = Partial<CreateMenuCategoryInput>;
+
+export interface CreateMenuItemInput {
+  menuCategoryId: number;
+  name: string;
+  description?: string;
+  price: number;
+  isAvailable?: boolean;
+}
+
+export type UpdateMenuItemInput = Partial<CreateMenuItemInput>;
+
+export interface CreateImageInput {
+  objectKey: string;
+  altText?: string;
+  isPrimary?: boolean;
+}
+
+export interface RestaurantDetail extends RestaurantSummary {
+  owner: RestaurantOwner;
+  menuCategories: MenuCategory[];
+  menuItems: MenuItem[];
+}
+
+export interface ImageUploadPresign {
+  uploadUrl: string;
+  objectKey: string;
+  publicUrl: string;
+  expiresIn: number;
+}

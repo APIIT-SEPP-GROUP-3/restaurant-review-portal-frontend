@@ -1,0 +1,7 @@
+.navigation-link { display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-control); padding: .625rem 1rem; font-size: .875rem; font-weight: 600; color: var(--panel-muted); transition: background-color .15s, color .15s; }
+.navigation-link:hover { color: var(--brand-ink); background: var(--brand-soft); }
+.navigation-link[aria-current="page"] { color: white; background: var(--brand-action); }
+.navigation-link[aria-current="page"]:hover { background: var(--brand-action-hover); }
+.navigation-link:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+.navigation-link-mobile { justify-content: flex-start; padding: .75rem 1rem; }
+@media (prefers-reduced-motion: reduce) { .navigation-link { transition: none; } }
