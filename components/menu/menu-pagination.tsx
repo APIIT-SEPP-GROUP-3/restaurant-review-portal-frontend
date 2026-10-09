@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { PaginationButton } from "@/components/ui/pagination-button";
 
 import type { Pagination } from "@/types/api";
 import type { MenuItemSearchParams } from "@/types/menu";
@@ -32,24 +32,24 @@ export function MenuPagination({
   return (
     <nav
       aria-label="Menu pagination"
-      className="mt-10 flex items-center justify-between rounded-2xl border border-orange-100 bg-white p-4"
+      className="mt-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-orange-100 bg-white p-4"
     >
       {pagination.page > 1 ? (
-        <Link href={pageHref(pagination.page - 1, filters)} className="rounded-xl border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700">
+        <PaginationButton href={pageHref(pagination.page - 1, filters)}>
           ← Previous
-        </Link>
+        </PaginationButton>
       ) : (
-        <span className="rounded-xl border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-400">← Previous</span>
+        <PaginationButton disabled>← Previous</PaginationButton>
       )}
       <p className="text-sm text-zinc-600">
         Page <strong>{pagination.page}</strong> of <strong>{pagination.totalPages}</strong>
       </p>
       {pagination.page < pagination.totalPages ? (
-        <Link href={pageHref(pagination.page + 1, filters)} className="rounded-xl border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700">
+        <PaginationButton href={pageHref(pagination.page + 1, filters)}>
           Next →
-        </Link>
+        </PaginationButton>
       ) : (
-        <span className="rounded-xl border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-400">Next →</span>
+        <PaginationButton disabled>Next →</PaginationButton>
       )}
     </nav>
   );

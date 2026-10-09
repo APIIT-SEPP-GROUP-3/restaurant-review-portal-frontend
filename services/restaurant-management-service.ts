@@ -191,3 +191,6 @@ export function deleteMenuItemImage(
     { method: "DELETE", token },
   );
 }
+
+export function deleteMenuCategory(id: number, token: string) { return apiRequest(`/menu-categories/${id}`, { method: "DELETE", token }); }
+export function deleteMenuItem(id: number, token: string) { return apiRequest(`/menu-items/${id}`, { method: "DELETE", token }); }

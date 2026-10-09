@@ -5,7 +5,7 @@ import { RestaurantWorkspace } from "@/components/management/restaurant-workspac
 
 export const metadata: Metadata = {
   title: "Manage restaurant",
-  description: "Manage restaurant categories, menu items, and images.",
+  description: "Manage your assigned restaurant categories, menu items, and images.",
 };
 
 interface ManageRestaurantPageProps {
@@ -19,7 +19,7 @@ export default async function ManageRestaurantPage({
 
   return (
     <RouteGuard
-      allowedRoles={["RESTAURANT_OWNER", "ADMIN"]}
+      allowedRoles={["RESTAURANT_OWNER"]}
       returnPath={`/manage/restaurants/${id}`}
     >
       <RestaurantWorkspace restaurantId={Number(id)} />

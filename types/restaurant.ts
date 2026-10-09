@@ -112,6 +112,7 @@ export interface ManagedMenuItem extends MenuItem {
 }
 
 export interface CreateRestaurantInput {
+  ownerId?: number;
   name: string;
   description?: string;
   address: string;
@@ -122,7 +123,7 @@ export interface CreateRestaurantInput {
   openingHours?: string;
 }
 
-export type UpdateRestaurantInput = Partial<CreateRestaurantInput>;
+export type UpdateRestaurantInput = Partial<Omit<CreateRestaurantInput, "ownerId">>;
 
 export interface CreateRestaurantCategoryInput {
   name: string;
