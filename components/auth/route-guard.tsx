@@ -29,8 +29,8 @@ export function RouteGuard({
   }, [ready, returnPath, router, user]);
 
   if (!ready || !user) {
-    return returnPath.startsWith("/manage") || returnPath === "/moderation" ?
-      <WorkspaceSkeleton title={returnPath === "/moderation" ? "Content moderation" : "Restaurant management"} /> : <PageSkeleton variant="profile" />;
+    return returnPath.startsWith("/manage") || returnPath.startsWith("/moderation") || returnPath === "/admin" || returnPath === "/my-reviews" ?
+      <WorkspaceSkeleton title={returnPath.startsWith("/moderation") || returnPath === "/admin" || returnPath === "/my-reviews" ? "Content moderation" : "Restaurant management"} /> : <PageSkeleton variant="profile" />;
   }
 
   if (!allowedRoles.includes(user.role)) {

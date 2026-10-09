@@ -1,0 +1,23 @@
+.pagination-button,
+.staff-workspace button.pagination-button {
+  display: inline-flex;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--brand-action);
+  border-radius: 9999px;
+  background: var(--brand-action);
+  padding: .5rem 1rem;
+  color: white;
+  font-size: .875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.pagination-button:hover:not(:disabled),
+.pagination-button[aria-current="page"] {
+  background: var(--brand-action-hover);
+  border-color: var(--brand-action-hover);
+}
+.pagination-button:disabled { opacity: .4; cursor: not-allowed; }
+.pagination-button:focus-visible { outline: 2px solid var(--brand-action); outline-offset: 3px; }

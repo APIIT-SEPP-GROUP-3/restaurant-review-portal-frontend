@@ -55,12 +55,12 @@ export function AuthNavigation({
       </NavigationLink>
 
       {user.role === "RESTAURANT_OWNER" || user.role === "ADMIN" ? (
-        <NavigationLink href="/manage/restaurants" mobile={mobile} onNavigate={onNavigate}>
+        <NavigationLink href={user.role === "ADMIN" ? "/admin" : "/manage/restaurants"} activeHrefs={["/admin", "/manage/restaurants"]} mobile={mobile} onNavigate={onNavigate}>
           Manage
         </NavigationLink>
       ) : null}
 
-      {user.role === "MODERATOR" || user.role === "ADMIN" ? (
+      {user.role === "MODERATOR" ? (
         <NavigationLink href="/moderation" mobile={mobile} onNavigate={onNavigate}>
           Moderation
         </NavigationLink>

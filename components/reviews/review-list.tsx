@@ -92,6 +92,7 @@ export function ReviewList({
               ) : null}
 
               <ReviewComments
+                reviewAuthorId={review.userId}
                 reviewId={review.id}
                 comments={commentsByReviewId[review.id] ?? []}
               />

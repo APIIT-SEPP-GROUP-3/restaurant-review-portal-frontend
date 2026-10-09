@@ -8,13 +8,15 @@ export const metadata: Metadata = {
   description: "Review and moderate DineRate community submissions.",
 };
 
-export default function ModerationPage() {
+export default async function ModerationPage({ searchParams }: { searchParams: Promise<{ queue?: string }> }) {
+  const { queue } = await searchParams;
+  const initialQueue = queue === "comments" ? "comments" : "reviews";
   return (
     <RouteGuard
-      allowedRoles={["MODERATOR", "ADMIN"]}
+      allowedRoles={["MODERATOR"]}
       returnPath="/moderation"
     >
-      <ModerationDashboard />
+      <ModerationDashboard key={initialQueue} initialQueue={initialQueue} />
     </RouteGuard>
   );
 }

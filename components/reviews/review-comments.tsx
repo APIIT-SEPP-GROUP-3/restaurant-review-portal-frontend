@@ -14,6 +14,8 @@ import type {
 } from "@/types/review";
 
 interface ReviewCommentsProps {
+  reviewAuthorId?: number;
+  allowOwner?: boolean;
   reviewId: number;
   comments: ReviewComment[];
   initiallyOpen?: boolean;
@@ -70,7 +72,7 @@ function CommentReply({ reply }: { reply: ReviewCommentReply }) {
   );
 }
 
-export function ReviewComments({ reviewId, comments, initiallyOpen = false, readOnly = false, onBusy, focusComposer = false }: ReviewCommentsProps) {
+export function ReviewComments({ reviewAuthorId, allowOwner = false, reviewId, comments, initiallyOpen = false, readOnly = false, onBusy, focusComposer = false }: ReviewCommentsProps) {
   const user = useAuthUser();
   const submitting = useRef(false);
 
@@ -81,9 +83,8 @@ export function ReviewComments({ reviewId, comments, initiallyOpen = false, read
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const canComment = !readOnly && (
-    user?.role === "CUSTOMER" ||
-    user?.role === "RESTAURANT_OWNER" ||
-    user?.role === "ADMIN"
+    (user?.role === "CUSTOMER" && user.id !== reviewAuthorId) ||
+    (user?.role === "RESTAURANT_OWNER" && allowOwner)
   );
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {

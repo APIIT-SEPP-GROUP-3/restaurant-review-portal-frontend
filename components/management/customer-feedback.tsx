@@ -66,7 +66,7 @@ export function CustomerFeedback({ restaurantId }: { restaurantId: number }) {
     </div>
     {selectedReview ? <WorkspaceDialog key={selectedReview.id} title={`${selected?.reply ? "Reply to" : "View"} review #${selectedReview.id}`} busy={busy} onClose={() => { if (!busy) setSelected(null); }}>
       <FeedbackReviewDetails review={selectedReview} />
-      <ReviewConversation reviewId={selectedReview.id} onBusy={setBusy} focusComposer={selected?.reply} />
+      <ReviewConversation allowOwner reviewId={selectedReview.id} onBusy={setBusy} focusComposer={selected?.reply} />
     </WorkspaceDialog> : null}
   </section>;
 }
