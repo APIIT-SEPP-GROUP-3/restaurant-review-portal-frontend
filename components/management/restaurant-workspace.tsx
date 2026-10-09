@@ -12,6 +12,7 @@ import { CustomerFeedback } from "@/components/management/customer-feedback";
 import { CategoryManager } from "@/components/management/category-manager";
 import { ImageManager } from "@/components/management/image-manager";
 import { MenuManager } from "@/components/management/menu-manager";
+import { getAssignedRestaurants } from "@/services/admin-service";
 import { ApiError } from "@/lib/api-client";
 import { getAuthToken } from "@/lib/auth-storage";
 import { useAuthUser } from "@/hooks/use-auth-user";
@@ -44,9 +45,12 @@ interface WorkspaceData {
 async function fetchWorkspaceData(
   restaurantId: number,
 ): Promise<WorkspaceData> {
+  const token = getAuthToken();
+  const assigned = token ? (await getAssignedRestaurants(token)).find(item => item.id === restaurantId) : undefined;
+  if (!assigned) throw new ApiError("You can only manage assigned restaurants.", 403);
   const [restaurant, restaurantCategories, menuCategories, menuItems] =
     await Promise.all([
-      getRestaurantById(restaurantId),
+      assigned.status === "ACTIVE" ? getRestaurantById(restaurantId) : Promise.resolve({ ...assigned, categories: [], images: assigned.images ?? [], owner: { id: assigned.ownerId, firstName: "", lastName: "" }, menuCategories: assigned.menuCategories ?? [], menuItems: assigned.menuItems ?? [] }),
       getRestaurantCategories(),
       getMenuCategories(restaurantId),
       getMenuItems(restaurantId),
@@ -78,7 +82,7 @@ export function RestaurantWorkspace({
   const [activeSection, setActiveSection] = useState("menu");
 
   const hasManagementRole =
-    user?.role === "RESTAURANT_OWNER" || user?.role === "ADMIN";
+    user?.role === "RESTAURANT_OWNER";
 
   useEffect(() => {
     if (!hasManagementRole || !Number.isInteger(restaurantId) || restaurantId <= 0) {
@@ -139,7 +143,7 @@ export function RestaurantWorkspace({
   }
 
   const canManage =
-    user.role === "ADMIN" || data.restaurant.ownerId === user.id;
+    data.restaurant.ownerId === user.id;
 
   if (!canManage) {
     return <WorkspaceMessage href="/manage/restaurants" action="Return to management" title="Access restricted" message="You can only manage restaurants that belong to your account." />;
@@ -159,9 +163,7 @@ export function RestaurantWorkspace({
           { id: "images", label: "Restaurant photos" },
           { id: "categories", label: "Restaurant categories" },
         ]} />
-      }>
-        {user.role === "ADMIN" ? <Link href="/moderation" className="block text-sm text-white/60 hover:text-white">Content moderation ↗</Link> : null}
-      </WorkspaceSidebar>
+      } />
     }>
       <WorkspaceHeader title={data.restaurant.name} actions={<Link href={`/restaurants/${restaurantId}`} className="workspace-button">View public page ↗</Link>} />
         {loadError ? (
@@ -173,7 +175,7 @@ export function RestaurantWorkspace({
         <div className="mt-6 space-y-8">
           {activeSection === "feedback" ? <CustomerFeedback key={restaurantId} restaurantId={restaurantId} /> : null}
           <div hidden={activeSection !== "categories"}>
-          <CategoryManager
+          {data.restaurant.status === "INACTIVE" ? <p className="mb-4 text-sm text-panel-muted">Category assignments are unavailable while this restaurant is inactive.</p> : <CategoryManager
             key={`categories-${data.restaurant.updatedAt}-${data.restaurantCategories.length}`}
             restaurantId={restaurantId}
             categories={data.restaurantCategories}
@@ -181,9 +183,9 @@ export function RestaurantWorkspace({
               ({ categoryId }) => categoryId,
             )}
             token={token}
-            isAdmin={user.role === "ADMIN"}
+            isAdmin={false}
             onChanged={refreshWorkspace}
-          />
+          />}
 
           </div>
           <div hidden={activeSection !== "menu"}>

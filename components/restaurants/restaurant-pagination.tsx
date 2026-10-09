@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { PaginationButton } from "@/components/ui/pagination-button";
 
 import type { Pagination } from "@/types/api";
 import type { RestaurantSearchParams } from "@/types/restaurant";
@@ -60,16 +60,16 @@ export function RestaurantPagination({
       className="mt-10 flex flex-col items-center justify-between gap-4 rounded-2xl border border-orange-100 bg-white p-4 sm:flex-row"
     >
       {hasPreviousPage ? (
-        <Link
+        <PaginationButton
           href={createPageHref(pagination.page - 1, filters)}
-          className="inline-flex rounded-xl border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
+
         >
           ← Previous
-        </Link>
+        </PaginationButton>
       ) : (
-        <span className="inline-flex cursor-not-allowed rounded-xl border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-400">
+        <PaginationButton disabled>
           ← Previous
-        </span>
+        </PaginationButton>
       )}
 
       <p className="text-sm text-zinc-600">
@@ -79,16 +79,16 @@ export function RestaurantPagination({
       </p>
 
       {hasNextPage ? (
-        <Link
+        <PaginationButton
           href={createPageHref(pagination.page + 1, filters)}
-          className="inline-flex rounded-xl border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
+
         >
           Next →
-        </Link>
+        </PaginationButton>
       ) : (
-        <span className="inline-flex cursor-not-allowed rounded-xl border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-400">
+        <PaginationButton disabled>
           Next →
-        </span>
+        </PaginationButton>
       )}
     </nav>
   );

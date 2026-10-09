@@ -15,8 +15,8 @@ export function WorkspaceShell({ sidebar, children, footer, label, className = "
   </section>;
 }
 
-export function WorkspaceSidebar({ title, identity, navigation, children, backLink }: {
-  title: string; identity?: string; navigation: ReactNode; children?: ReactNode;
+export function WorkspaceSidebar({ title, identity, navigation, backLink }: {
+  title: string; identity?: string; navigation: ReactNode;
   backLink?: { href: string; label: string };
 }) {
   return <>
@@ -24,10 +24,7 @@ export function WorkspaceSidebar({ title, identity, navigation, children, backLi
     {identity ? <p className="mt-2 text-xs text-white/50">{identity}</p> : null}
     {backLink ? <Link href={backLink.href} className="workspace-back-link"><span aria-hidden="true">←</span>{backLink.label}</Link> : null}
     {navigation}
-    <div className="mt-6 hidden space-y-3 border-t border-white/10 pt-5 lg:block">
-      {children}
-      <Link href="/restaurants" className="block text-sm text-white/60 hover:text-white">View public site ↗</Link>
-    </div>
+
   </>;
 }
 

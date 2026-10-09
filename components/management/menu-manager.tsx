@@ -10,7 +10,7 @@ import { WorkspaceTable } from "@/components/workspace/workspace-table";
 import { WorkspaceTabs } from "@/components/workspace/workspace-tabs";
 import { WorkspaceToast } from "@/components/workspace/workspace-toast";
 import { ApiError } from "@/lib/api-client";
-import { createMenuCategory, updateMenuCategory, updateMenuItemAvailability } from "@/services/restaurant-management-service";
+import { createMenuCategory, deleteMenuCategory, deleteMenuItem, updateMenuCategory, updateMenuItemAvailability } from "@/services/restaurant-management-service";
 import type { CreateMenuCategoryInput, ManagedMenuItem, MenuCategory } from "@/types/restaurant";
 
 interface MenuManagerProps {
@@ -23,8 +23,8 @@ interface MenuManagerProps {
 
 type DialogState =
   | { mode: "add-item" | "add-category" }
-  | { mode: "view" | "edit" | "availability" | "images"; id: number }
-  | { mode: "edit-category"; id: number };
+  | { mode: "view" | "edit" | "availability" | "images" | "delete-item"; id: number }
+  | { mode: "edit-category" | "delete-category"; id: number };
 
 export function MenuManager({ restaurantId, menuCategories, menuItems, token, onChanged }: MenuManagerProps) {
   const [tab, setTab] = useState<"items" | "categories">("items");
@@ -38,8 +38,8 @@ export function MenuManager({ restaurantId, menuCategories, menuItems, token, on
   const [feedback, setFeedback] = useState("");
   const working = useRef(false);
   const busy = isWorking || formBusy;
-  const item = dialog && "id" in dialog && dialog.mode !== "edit-category" ? menuItems.find(item => item.id === dialog.id) : undefined;
-  const category = dialog?.mode === "edit-category" ? menuCategories.find(category => category.id === dialog.id) : undefined;
+  const item = dialog && "id" in dialog && dialog.mode !== "edit-category" && dialog.mode !== "delete-category" ? menuItems.find(item => item.id === dialog.id) : undefined;
+  const category = (dialog?.mode === "edit-category" || dialog?.mode === "delete-category") ? menuCategories.find(category => category.id === dialog.id) : undefined;
   const filteredItems = menuItems.filter(item =>
     `${item.name} ${item.menuCategory.name}`.toLowerCase().includes(search.toLowerCase()) &&
     (availability === "all" || item.isAvailable === (availability === "available")));
@@ -81,7 +81,7 @@ export function MenuManager({ restaurantId, menuCategories, menuItems, token, on
     if (saved) setDialog(null);
   }
 
-  const title = dialog?.mode === "add-item" ? "Add menu item" : dialog?.mode === "add-category" ? "Add menu category" :
+  const title = dialog?.mode === "delete-item" ? `Delete ${item?.name ?? "menu item"}` : dialog?.mode === "delete-category" ? `Delete ${category?.name ?? "menu category"}` : dialog?.mode === "add-item" ? "Add menu item" : dialog?.mode === "add-category" ? "Add menu category" :
     dialog?.mode === "edit-category" ? "Edit menu category" : dialog?.mode === "edit" ? `Edit ${item?.name}` :
     dialog?.mode === "images" ? `Photos of ${item?.name}` : dialog?.mode === "availability" ? "Update availability" : item?.name ?? "Menu item";
 
@@ -120,16 +120,20 @@ export function MenuManager({ restaurantId, menuCategories, menuItems, token, on
                 <button type="button" onClick={() => open({ mode: "view", id: item.id })} className="workspace-button">View</button>
                 <button type="button" onClick={() => open({ mode: "edit", id: item.id })} className="workspace-button">Edit</button>
                 <button type="button" onClick={() => open({ mode: "availability", id: item.id })} className="workspace-button">{item.isAvailable ? "Make unavailable" : "Make available"}</button>
-                <button type="button" onClick={() => open({ mode: "images", id: item.id })} className="workspace-button">Photos ({item.images.length})</button>
+                <button type="button" onClick={() => open({ mode: "delete-item", id: item.id })} className="workspace-button">Delete</button><button type="button" onClick={() => open({ mode: "images", id: item.id })} className="workspace-button">Photos ({item.images.length})</button>
               </div></td>
             </tr>;
           })}
         </WorkspaceTable> : <WorkspaceTable onRowClick={id => open({ mode: "edit-category", id })} label="Menu categories" header={<tr><th>Category</th><th>Display order</th><th>Items</th><th>Actions</th></tr>}>
-          {pageCategories.map(category => <tr key={category.id} data-record-id={category.id}><td className="h-18 px-5 py-3 font-semibold">{category.name}</td><td className="px-4 py-3">{category.displayOrder}</td><td className="px-4 py-3">{menuItems.filter(item => item.menuCategoryId === category.id).length}</td><td className="px-3 py-3 text-right"><button type="button" onClick={() => open({ mode: "edit-category", id: category.id })} className="workspace-button">Edit category</button></td></tr>)}
+          {pageCategories.map(category => <tr key={category.id} data-record-id={category.id}><td className="h-18 px-5 py-3 font-semibold">{category.name}</td><td className="px-4 py-3">{category.displayOrder}</td><td className="px-4 py-3">{menuItems.filter(item => item.menuCategoryId === category.id).length}</td><td className="px-3 py-3 text-right"><button type="button" onClick={() => open({ mode: "edit-category", id: category.id })} className="workspace-button">Edit category</button><button type="button" onClick={() => open({ mode: "delete-category", id: category.id })} className="workspace-button ml-2">Delete</button></td></tr>)}
         </WorkspaceTable>}
       <Pagination label="Menu pagination" page={currentPage} total={total} onPageChange={setPage} />
     </div>
     {dialog ? <WorkspaceDialog key={`${dialog.mode}-${"id" in dialog ? dialog.id : "new"}`} title={title} busy={busy} onClose={close} footer={
+      dialog.mode === "delete-item" || dialog.mode === "delete-category" ? <button disabled={busy} className="workspace-button" onClick={async () => {
+        const id = "id" in dialog ? dialog.id : 0;
+        if (await runAction(() => dialog.mode === "delete-item" ? deleteMenuItem(id, token) : deleteMenuCategory(id, token), "Deleted successfully.")) setDialog(null);
+      }}>{busy ? "Deleting..." : "Confirm deletion"}</button> :
       dialog.mode === "add-item" || dialog.mode === "edit" ? <button type="submit" form="menu-item-editor" disabled={busy || !menuCategories.length} className="workspace-button workspace-button-primary">{busy ? "Saving..." : dialog.mode === "edit" ? "Save changes" : "Add menu item"}</button> :
       dialog.mode === "add-category" || dialog.mode === "edit-category" ? <button type="submit" form="menu-category-editor" disabled={busy} className="workspace-button workspace-button-primary">{busy ? "Saving..." : "Save category"}</button> :
       item && dialog.mode === "availability" ? <button type="button" disabled={busy} onClick={async () => {
@@ -137,6 +141,7 @@ export function MenuManager({ restaurantId, menuCategories, menuItems, token, on
       }} className="workspace-button workspace-button-primary">{busy ? "Updating..." : item.isAvailable ? "Confirm unavailable" : "Confirm available"}</button> :
       item && dialog.mode === "view" ? <><button type="button" onClick={() => open({ mode: "edit", id: item.id })} className="workspace-button workspace-button-primary">Edit item</button><button type="button" onClick={() => open({ mode: "availability", id: item.id })} className="workspace-button">Update availability</button><button type="button" onClick={() => open({ mode: "images", id: item.id })} className="workspace-button">Manage photos</button></> : null
     }>
+      {dialog.mode === "delete-item" || dialog.mode === "delete-category" ? <p className="mb-4 text-sm">Delete {item?.name ?? category?.name}? This cannot be undone. Categories must be empty. Meals referenced by reviews must be marked unavailable to preserve review history.</p> : null}
       {error ? <p role="alert" className="mb-4 rounded-2xl bg-danger-soft p-4 text-sm text-danger-text">{error}</p> : null}
       {feedback ? <p role="status" className="mb-4 rounded-2xl bg-success-soft p-4 text-sm text-success-text">{feedback}</p> : null}
       {dialog.mode === "add-item" || dialog.mode === "edit" ? <MenuItemForm restaurantId={restaurantId} categories={menuCategories} item={item} token={token} onChanged={onChanged} formId="menu-item-editor" externalSubmit onBusy={setFormBusy} onSaved={() => { setDialog(null); setFeedback(item ? "Menu item updated successfully." : "Menu item added successfully."); }} /> : null}

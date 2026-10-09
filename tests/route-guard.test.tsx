@@ -9,16 +9,16 @@ vi.mock("@/hooks/use-auth-user", () => ({ useAuthSession: mocks.session }));
 const user: AuthUser = { id: 1, firstName: "Test", lastName: "User", email: "test@example.com", role: "CUSTOMER" };
 beforeEach(() => mocks.session.mockReturnValue({ user, ready: true }));
 
-function renderGuard(roles: UserRole[] = ["MODERATOR", "ADMIN"]) {
+function renderGuard(roles: UserRole[] = ["MODERATOR"]) {
   render(<RouteGuard allowedRoles={roles} returnPath="/moderation"><p>Protected content</p></RouteGuard>);
 }
 describe("role-based route guard", () => {
-  it.each(["MODERATOR", "ADMIN"] as const)("allows %s to view moderation", (role) => {
+  it.each(["MODERATOR"] as const)("allows %s to view moderation", (role) => {
     mocks.session.mockReturnValue({ user: { ...user, role }, ready: true });
     renderGuard();
     expect(screen.getByText("Protected content")).toBeDefined();
   });
-  it.each(["CUSTOMER", "RESTAURANT_OWNER"] as const)("denies %s access to moderation", (role) => {
+  it.each(["CUSTOMER", "RESTAURANT_OWNER", "ADMIN"] as const)("denies %s access to moderation", (role) => {
     mocks.session.mockReturnValue({ user: { ...user, role }, ready: true });
     renderGuard();
     expect(screen.getByText("Access denied")).toBeDefined();

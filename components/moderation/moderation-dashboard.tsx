@@ -7,8 +7,8 @@ import Link from "next/link";
 import { WorkspaceDialog } from "@/components/workspace/workspace-dialog";
 import { WorkspaceToast } from "@/components/workspace/workspace-toast";
 import { WorkspaceMessage } from "@/components/workspace/workspace-message";
-import { WorkspaceNavigation } from "@/components/workspace/workspace-navigation";
-import { WorkspaceShell, WorkspaceSidebar, WorkspaceHeader } from "@/components/workspace/workspace-shell";
+import { ModerationSidebar } from "@/components/moderation/moderation-sidebar";
+import { WorkspaceShell, WorkspaceHeader } from "@/components/workspace/workspace-shell";
 import { WorkspaceTable } from "@/components/workspace/workspace-table";
 import { Pagination, WORKSPACE_PAGE_SIZE } from "@/components/workspace/pagination";
 import { WorkspaceTabs } from "@/components/workspace/workspace-tabs";
@@ -48,11 +48,11 @@ function getErrorMessage(error: unknown): string {
     : "Unable to complete the moderation request.";
 }
 
-export function ModerationDashboard() {
+export function ModerationDashboard({ initialQueue = "reviews" }: { initialQueue?: QueueType }) {
   const user = useAuthUser();
 
 
-  const [queueType, setQueueType] = useState<QueueType>("reviews");
+  const [queueType, setQueueType] = useState<QueueType>(initialQueue);
   const [status, setStatus] = useState<ModerationStatus>("PENDING");
   const [reviews, setReviews] = useState<ModerationReview[]>([]);
   const [comments, setComments] = useState<ModerationComment[]>([]);
@@ -78,7 +78,7 @@ export function ModerationDashboard() {
     return () => window.clearTimeout(timeout);
   }, [successMessage]);
 
-  const canModerate = user?.role === "MODERATOR" || user?.role === "ADMIN";
+  const canModerate = user?.role === "MODERATOR";
 
   useEffect(() => {
     if (!canModerate) {
@@ -282,14 +282,7 @@ export function ModerationDashboard() {
   return (
     <>
     <WorkspaceShell className="moderation-workspace" label="Moderation content" sidebar={
-      <WorkspaceSidebar title="Content moderation" identity={`${user.role === "ADMIN" ? "Administrator" : "Moderator"} · ${user.firstName}`} navigation={
-        <WorkspaceNavigation label="Moderation queues" active={queueType} disabled={actionId !== null} onSelect={type => changeQueue(type as QueueType)} items={[
-          { id: "reviews", label: "Customer reviews" }, { id: "comments", label: "Comments & replies" },
-        ]} />
-      }>
-        {user.role === "ADMIN" ? <Link href="/manage/restaurants" className="block text-sm text-white/60 hover:text-white">Restaurant management ↗</Link> : null}
-        <p className="pt-4 text-xs leading-6 text-white/40">Review content before publishing. Rejected submissions require a reason.</p>
-      </WorkspaceSidebar>
+      <ModerationSidebar active={queueType} firstName={user.firstName} disabled={actionId !== null} onSelect={changeQueue} />
     } footer={<Pagination label="Submission pagination" page={currentPage} total={visibleItems.length} onPageChange={setPage} loading={isLoading} />}>
           <WorkspaceHeader breadcrumb={`Moderation / ${queueType}`} title={queueType === "reviews" ? "Customer reviews" : "Comments & replies"} description="View a submission or choose an action to open its full details." actions={
             <button type="button" disabled={isLoading || actionId !== null} onClick={() => { setIsLoading(true); setErrorMessage(""); setRefreshKey(key => key + 1); }} className="workspace-button">Refresh queue</button>

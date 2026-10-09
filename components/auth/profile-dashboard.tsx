@@ -172,6 +172,8 @@ export function ProfileDashboard() {
             <aside className="rounded-2xl bg-orange-50 p-6">
               <h2 className="text-xl font-bold text-zinc-950">Quick actions</h2>
               <div className="mt-5 flex flex-col gap-3">
+                {profile.role === "ADMIN" ? <Link href="/admin" className="workspace-button">Users & roles →</Link> : null}
+                {profile.role === "CUSTOMER" ? <Link href="/my-reviews" className="workspace-button">My reviews & status →</Link> : null}
                 <Link
                   href="/restaurants"
                   className="rounded-xl bg-white px-4 py-3 font-semibold text-zinc-800 shadow-sm hover:text-orange-600"
@@ -192,7 +194,7 @@ export function ProfileDashboard() {
                     Manage restaurants →
                   </Link>
                 ) : null}
-                {profile.role === "MODERATOR" || profile.role === "ADMIN" ? (
+                {profile.role === "MODERATOR" ? (
                   <Link
                     href="/moderation"
                     className="rounded-xl bg-white px-4 py-3 font-semibold text-zinc-800 shadow-sm hover:text-orange-600"

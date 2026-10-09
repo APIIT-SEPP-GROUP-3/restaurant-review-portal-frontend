@@ -12,6 +12,8 @@ import type {
 } from "@/types/restaurant";
 
 interface RestaurantFormProps {
+  allowImages?: boolean;
+  canSubmit?: boolean;
   restaurant?: RestaurantRecord;
   images?: RestaurantImage[];
   isSubmitting: boolean;
@@ -29,6 +31,8 @@ function optionalValue(value: string): string | undefined {
 
 export function RestaurantForm({
   restaurant,
+  allowImages = true,
+  canSubmit = true,
   images = [],
   isSubmitting,
   onSubmit,
@@ -66,7 +70,7 @@ export function RestaurantForm({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (submitting.current || busy) return;
+    if (submitting.current || busy || !canSubmit) return;
     submitting.current = true;
     onBusy?.(true);
     setError("");
@@ -222,7 +226,7 @@ export function RestaurantForm({
         </label>
       </div>
 
-      <div className="space-y-3 rounded-2xl border border-panel-border bg-brand-soft/40 p-4">
+      {allowImages ? <div className="space-y-3 rounded-2xl border border-panel-border bg-brand-soft/40 p-4">
         {restaurant && images.length > 0 ? (
           <div className="flex flex-wrap gap-3">
             {images.map((existingImage) => (
@@ -263,12 +267,12 @@ export function RestaurantForm({
             </label>
           </>
         ) : null}
-      </div>
+      </div> : null}
 
       <div className="flex flex-wrap gap-3">
         <button
           type="submit"
-          disabled={busy}
+          disabled={busy || !canSubmit}
           className="rounded-full bg-brand px-6 py-3 font-semibold text-white hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy

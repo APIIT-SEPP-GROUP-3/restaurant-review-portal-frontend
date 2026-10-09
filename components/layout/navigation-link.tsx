@@ -11,9 +11,10 @@ export function isNavigationActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function NavigationLink({ href, children, mobile = false, onNavigate }: {
-  href: string; children: ReactNode; mobile?: boolean; onNavigate?: () => void;
+export function NavigationLink({ href, children, mobile = false, onNavigate, activeHrefs }: {
+  href: string; children: ReactNode; mobile?: boolean; onNavigate?: () => void; activeHrefs?: string[];
 }) {
-  const active = isNavigationActive(usePathname(), href);
+  const pathname = usePathname();
+  const active = (activeHrefs ?? [href]).some(path => isNavigationActive(pathname, path));
   return <Link href={href} onClick={onNavigate} aria-current={active ? "page" : undefined} className={`navigation-link ${mobile ? "navigation-link-mobile" : ""}`}>{children}</Link>;
 }
